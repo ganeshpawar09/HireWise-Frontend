@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/const/font.dart';
+import 'package:hirewise/pages/prepzone/test/mockinterview/mock_interview_page.dart';
+import 'package:hirewise/provider/user_provider.dart';
+import 'package:provider/provider.dart';
 
 class MockInterviewSetUpPage extends StatefulWidget {
   const MockInterviewSetUpPage({super.key});
@@ -17,6 +20,8 @@ class _MockInterviewSetUpPageState extends State<MockInterviewSetUpPage> {
 
   String? selectedType;
   String? selectedExperience;
+  bool _isLoading = false;
+  int numberOfQuestions = 1;
 
   // Move these to a separate constants file or service
   static const Map<String, List<String>> dropdownOptions = {
@@ -43,16 +48,41 @@ class _MockInterviewSetUpPageState extends State<MockInterviewSetUpPage> {
     super.dispose();
   }
 
-  void _handleStartInterview() {
-    final interviewData = {
-      'company': _companyController.text,
-      'role': _roleController.text,
-      'type': selectedType,
-      'experience': selectedExperience,
-      'jobDescription': _jobDescriptionController.text,
-    };
+  void _handleStartInterview() async {
+    if (!_isFormValid()) return;
 
-    debugPrint('Interview Data: $interviewData');
+    setState(() => _isLoading = true);
+
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      await userProvider.getInterviewQuestions(
+          context: context,
+          companyName: _companyController.text,
+          role: _roleController.text,
+          interviewType: selectedType!,
+          experienceLevel: selectedExperience!,
+          jobDescription: _jobDescriptionController.text,
+          numberOfQuestions: numberOfQuestions);
+
+      if (!mounted) return;
+
+      // Navigate to the next page (replace NextPage() with your actual page)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MockInterviewPage(),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching interview questions: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -66,9 +96,9 @@ class _MockInterviewSetUpPageState extends State<MockInterviewSetUpPage> {
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       elevation: 0,
-      title: const Text(
+      title: Text(
         "Mock Interview Setup",
-        style: TextStyle(
+        style: AppStyles.mondaN.copyWith(
           fontSize: 24,
           fontWeight: FontWeight.bold,
           color: Colors.white,
@@ -119,14 +149,68 @@ class _MockInterviewSetUpPageState extends State<MockInterviewSetUpPage> {
               icon: Icons.timeline,
             ),
             const SizedBox(height: 24),
+            _buildConfigurationSlider(
+              title: 'Number of Questions',
+              value: numberOfQuestions.toDouble(),
+              min: 1,
+              max: 10,
+              divisions: 1,
+              onChanged: (value) =>
+                  setState(() => numberOfQuestions = value.round()),
+              suffix: 'questions',
+            ),
+            const SizedBox(height: 24),
             _buildJobDescriptionInput(),
             const SizedBox(height: 32),
             StartButton(
               onPressed: _isFormValid() ? _handleStartInterview : null,
+              isLoading: _isLoading,
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildConfigurationSlider({
+    required String title,
+    required double value,
+    required double min,
+    required double max,
+    required int divisions,
+    required ValueChanged<double> onChanged,
+    required String suffix,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$title: ${value.round()} $suffix',
+          style: AppStyles.mondaB.copyWith(
+            fontSize: 16,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SliderTheme(
+          data: SliderThemeData(
+            activeTrackColor: customBlue,
+            inactiveTrackColor: customBlue.withOpacity(0.3),
+            thumbColor: Colors.white,
+            overlayColor: customBlue.withOpacity(0.1),
+            valueIndicatorColor: customBlue,
+            valueIndicatorTextStyle: const TextStyle(color: Colors.white),
+          ),
+          child: Slider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: (max - min).toInt(), // Fix: Proper number of divisions
+            label: '${value.round()} $suffix',
+            onChanged: onChanged,
+          ),
+        ),
+      ],
     );
   }
 
@@ -174,7 +258,8 @@ class _MockInterviewSetUpPageState extends State<MockInterviewSetUpPage> {
               decoration: InputDecoration(
                 prefixIcon: Icon(icon, color: customBlue),
                 hintText: "Start typing...",
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                hintStyle: AppStyles.mondaN
+                    .copyWith(color: Colors.white.withOpacity(0.3)),
                 filled: true,
                 fillColor: backgroundColor,
                 border: _getBorder(),
@@ -259,7 +344,8 @@ class _MockInterviewSetUpPageState extends State<MockInterviewSetUpPage> {
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.description, color: customBlue),
             hintText: "Paste job description here (optional)",
-            hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+            hintStyle:
+                AppStyles.mondaN.copyWith(color: Colors.white.withOpacity(0.3)),
             filled: true,
             fillColor: backgroundColor,
             border: _getBorder(),
@@ -272,7 +358,6 @@ class _MockInterviewSetUpPageState extends State<MockInterviewSetUpPage> {
   }
 }
 
-// CustomDropdown and StartButton classes remain the same
 class CustomDropdown extends StatelessWidget {
   final String label;
   final List<String> options;
@@ -338,8 +423,9 @@ class CustomDropdown extends StatelessWidget {
 
 class StartButton extends StatelessWidget {
   final VoidCallback? onPressed;
+  final bool isLoading;
 
-  const StartButton({super.key, this.onPressed});
+  const StartButton({super.key, this.onPressed, this.isLoading = false});
 
   @override
   Widget build(BuildContext context) {
@@ -361,14 +447,17 @@ class StartButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: Text(
-          "Start Interview",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: isEnabled ? Colors.white : Colors.white.withOpacity(0.5),
-          ),
-        ),
+        child: isLoading
+            ? const CircularProgressIndicator(color: Colors.white)
+            : Text(
+                "Start Interview",
+                style: AppStyles.mondaN.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color:
+                      isEnabled ? Colors.white : Colors.white.withOpacity(0.5),
+                ),
+              ),
       ),
     );
   }

@@ -17,6 +17,7 @@ import 'package:hirewise/pages/profile/edit/project_edit_page.dart';
 import 'package:hirewise/pages/profile/edit/skill_edit_page.dart';
 import 'package:hirewise/pages/profile/edit/social_link_edit.dart';
 import 'package:hirewise/pages/profile/profile_builder_page.dart';
+import 'package:hirewise/pages/profile/profile_feedback_page.dart';
 import 'package:hirewise/provider/user_provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -93,7 +94,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 subtitle: 'Receive personalized feedback and tips',
                 icon: Icons.analytics_outlined,
                 onTap: () {
-                  // TODO: Implement profile feedback
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => ProfileFeedbackPage(
+                            userId: widget.user.id,
+                          )));
                 },
               ),
               const SizedBox(height: 16),
@@ -101,7 +105,12 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 16),
               _buildSectionCard('Profile summary', _buildProfileSummary()),
               const SizedBox(height: 16),
-              _buildAssessmentSection(),
+              _buildAssessmentCard(
+                'Aptitude',
+                widget.user.aptitudeTestResult,
+                Colors.blue,
+                MdiIcons.brain,
+              ),
               const SizedBox(height: 16),
               _buildSectionCard('Education', _buildEducation()),
               const SizedBox(height: 16),
@@ -849,37 +858,37 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Future<void> _launchURL(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    }
-  }
-
   Widget _buildSocialButton(IconData icon, String platform, Color color) {
     return InkWell(
       onTap: () {
+        String? url;
         switch (platform) {
           case "Linkedin":
-            if (widget.user.linkedin != null && widget.user.linkedin != "") {
-              _launchURL(widget.user.linkedin!);
+            if (widget.user.linkedin != null &&
+                widget.user.linkedin!.isNotEmpty) {
+              url = widget.user.linkedin;
             }
             break;
           case "Portfolio":
-            if (widget.user.portfolio != null && widget.user.portfolio != "") {
-              _launchURL(widget.user.portfolio!);
+            if (widget.user.portfolio != null &&
+                widget.user.portfolio!.isNotEmpty) {
+              url = widget.user.portfolio;
             }
             break;
           case "Leetcode":
-            if (widget.user.leetcode != null && widget.user.leetcode != "") {
-              _launchURL("https://leetcode.com/${widget.user.leetcode!}");
+            if (widget.user.leetcode != null &&
+                widget.user.leetcode!.isNotEmpty) {
+              url = "https://leetcode.com/${widget.user.leetcode}";
             }
             break;
           case "GitHub":
-            if (widget.user.github != null && widget.user.github != "") {
-              _launchURL("https://github.com/${widget.user.github!}");
+            if (widget.user.github != null && widget.user.github!.isNotEmpty) {
+              url = "https://github.com/${widget.user.github}";
             }
             break;
+        }
+        if (url != null) {
+          _launchURL(url);
         }
       },
       child: Container(
@@ -903,43 +912,20 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildAssessmentSection() {
-    return Card(
-      color: cardBackgroundColor,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Assessments',
-              style: AppStyles.mondaB.copyWith(fontSize: 18),
-            ),
-            const SizedBox(height: 16),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildAssessmentCard(
-                    'Mock Interview',
-                    widget.user.aptitudeAssessments,
-                    Colors.green,
-                    MdiIcons.accountTie,
-                  ),
-                  const SizedBox(width: 16),
-                  _buildAssessmentCard(
-                    'Aptitude',
-                    widget.user.aptitudeAssessments,
-                    Colors.blue,
-                    MdiIcons.brain,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  Future<void> _launchURL(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        debugPrint('Cannot launch URL: $url');
+      }
+    } catch (e) {
+      debugPrint('Error launching URL: $e');
+    }
   }
 
   Widget _buildAssessmentCard(
@@ -964,10 +950,10 @@ class _ProfilePageState extends State<ProfilePage> {
         );
       },
       child: Container(
-        width: 200,
+        height: 200,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: cardBackgroundColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: color.withOpacity(0.3),
@@ -1218,14 +1204,6 @@ class _ProfilePageState extends State<ProfilePage> {
           }).toList(),
         ),
         const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Profile Views', style: AppStyles.mondaN),
-            Text('2.5k this month',
-                style: AppStyles.mondaN.copyWith(color: Colors.green)),
-          ],
-        ),
       ],
     );
   }
@@ -1262,9 +1240,18 @@ class _ProfilePageState extends State<ProfilePage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildLeetCodeProblemStat('Easy', 120, Colors.green),
-            _buildLeetCodeProblemStat('Medium', 85, Colors.orange),
-            _buildLeetCodeProblemStat('Hard', 25, Colors.red),
+            _buildLeetCodeProblemStat(
+                'Easy',
+                (widget.user.leetCodeData!.problemStats['Easy']).toString(),
+                Colors.green),
+            _buildLeetCodeProblemStat(
+                'Medium',
+                (widget.user.leetCodeData!.problemStats['Medium']).toString(),
+                Colors.orange),
+            _buildLeetCodeProblemStat(
+                'Hard',
+                (widget.user.leetCodeData!.problemStats['Hard']).toString(),
+                Colors.red),
           ],
         ),
         const SizedBox(height: 16),
@@ -1418,17 +1405,20 @@ class _ProfilePageState extends State<ProfilePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildSubmissionStat('972', 'Submissions', 'in the past year'),
+              _buildSubmissionStat(
+                  (widget.user.leetCodeData!.problemStats['All']).toString(),
+                  'Submissions',
+                  'Total'),
               _buildSubmissionStat(
                   widget.user.leetCodeData!.submissionStats.activeDays
                       .toString(),
                   'Active Days',
-                  'total'),
+                  'Total'),
               _buildSubmissionStat(
                   widget.user.leetCodeData!.submissionStats.maxStreak
                       .toString(),
                   'Max Streak',
-                  'days'),
+                  'Days'),
             ],
           ),
         ],
@@ -1478,11 +1468,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildLeetCodeProblemStat(String difficulty, int count, Color color) {
+  Widget _buildLeetCodeProblemStat(
+      String difficulty, String count, Color color) {
     return Column(
       children: [
         Text(
-          count.toString(),
+          count,
           style: AppStyles.mondaB.copyWith(
             color: color,
             fontSize: 24,

@@ -6,18 +6,18 @@ import 'package:hirewise/pages/prepzone/test/aptitude/aptitude_result_page.dart'
 import 'package:hirewise/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 
-class TestPage extends StatefulWidget {
+class AptitudeTestPage extends StatefulWidget {
   final List<Question> questions;
   final int timePerQuestion;
 
-  const TestPage(
+  const AptitudeTestPage(
       {super.key, required this.questions, required this.timePerQuestion});
 
   @override
-  State<TestPage> createState() => _TestPageState();
+  State<AptitudeTestPage> createState() => _AptitudeTestPageState();
 }
 
-class _TestPageState extends State<TestPage> {
+class _AptitudeTestPageState extends State<AptitudeTestPage> {
   late List<Question> testQuestions;
   late int timeLeft;
   late int totalTimeTaken;
@@ -140,10 +140,10 @@ class _TestPageState extends State<TestPage> {
     );
     UserProvider userProvider =
         Provider.of<UserProvider>(context, listen: false);
-    userProvider.user!.aptitudeAssessments.add(testResult);
+    userProvider.user!.aptitudeTestResult.add(testResult);
     await userProvider.saveToLocal();
-    await userProvider.updateUserProfile(context,
-        {"aptitudeAssessments": userProvider.user!.aptitudeAssessments});
+    await userProvider.updateUserProfile(
+        context, {"aptitudeTestResult": userProvider.user!.aptitudeTestResult});
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(

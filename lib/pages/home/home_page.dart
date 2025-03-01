@@ -156,7 +156,7 @@ class _HomePageState extends State<HomePage> {
                 text: "Hire",
                 style: AppStyles.mondaB.copyWith(
                   fontSize: 30,
-                  color: customBlue,
+                  color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -164,7 +164,7 @@ class _HomePageState extends State<HomePage> {
                 text: "Wise",
                 style: AppStyles.mondaB.copyWith(
                   fontSize: 30,
-                  color: Colors.white,
+                  color: customBlue,
                   fontWeight: FontWeight.bold,
                 ),
               ),

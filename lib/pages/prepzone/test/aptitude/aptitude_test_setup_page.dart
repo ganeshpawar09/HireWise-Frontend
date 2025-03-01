@@ -97,7 +97,7 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
         Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => TestPage(
+              builder: (context) => AptitudeTestPage(
                   questions: topicProvider.questions!,
                   timePerQuestion: timePerQuestion),
             ));

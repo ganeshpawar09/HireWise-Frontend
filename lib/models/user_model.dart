@@ -1,5 +1,6 @@
 import 'package:hirewise/models/aptitude_test_result_model.dart';
 import 'package:hirewise/models/job_model.dart';
+import 'package:hirewise/models/mock_interview_result_model.dart';
 
 class User {
   final String id;
@@ -24,9 +25,8 @@ class User {
   final List<Experience> experience;
   final List<Project> projects;
   final List<Job> appliedJobs;
-  final List<AptitudeTestResult> aptitudeAssessments;
-  final List<MockInterviewAssessment> mockInterviewAssessments;
-  final List<CommunicationAssessment> communicationAssessments;
+  final List<AptitudeTestResult> aptitudeTestResult;
+  final List<MockInterviewResult> mockInterviewResult;
   final GitHubData? gitHubData;
   final LeetCodeData? leetCodeData;
   final String? linkedin;
@@ -64,18 +64,16 @@ class User {
     List<Experience>? experience,
     List<Project>? projects,
     List<Job>? appliedJobs,
-    List<AptitudeTestResult>? aptitudeAssessments,
-    List<MockInterviewAssessment>? mockInterviewAssessments,
-    List<CommunicationAssessment>? communicationAssessments,
+    List<AptitudeTestResult>? aptitudeTestResult,
+    List<MockInterviewResult>? mockInterviewResult,
   })  : keySkills = keySkills ?? [],
         achievements = achievements ?? [],
         education = education ?? [],
         experience = experience ?? [],
         projects = projects ?? [],
         appliedJobs = appliedJobs ?? [],
-        aptitudeAssessments = aptitudeAssessments ?? [],
-        mockInterviewAssessments = mockInterviewAssessments ?? [],
-        communicationAssessments = communicationAssessments ?? [];
+        aptitudeTestResult = aptitudeTestResult ?? [],
+        mockInterviewResult = mockInterviewResult ?? [];
 
   factory User.fromJson(Map<String, dynamic>? json) {
     if (json == null) {
@@ -122,20 +120,13 @@ class User {
         json['appliedJobs'],
         (item) => Job.fromJson(item as Map<String, dynamic>),
       ),
-     
-      aptitudeAssessments: _parseList(
-        json['aptitudeAssessments'],
+      aptitudeTestResult: _parseList(
+        json['aptitudeTestResult'],
         (item) => AptitudeTestResult.fromJson(item as Map<String, dynamic>),
       ),
-      mockInterviewAssessments: _parseList(
-        json['mockInterviewAssessments'],
-        (item) =>
-            MockInterviewAssessment.fromJson(item as Map<String, dynamic>),
-      ),
-      communicationAssessments: _parseList(
-        json['communicationAssessments'],
-        (item) =>
-            CommunicationAssessment.fromJson(item as Map<String, dynamic>),
+      mockInterviewResult: _parseList(
+        json['mockInterviewResult'],
+        (item) => MockInterviewResult.fromJson(item as Map<String, dynamic>),
       ),
       gitHubData: json['gitHubData'] != null
           ? GitHubData.fromJson(json['gitHubData'] as Map<String, dynamic>)
@@ -174,12 +165,9 @@ class User {
       'experience': experience.map((e) => e.toJson()).toList(),
       'projects': projects.map((p) => p.toJson()).toList(),
       'appliedJobs': appliedJobs.map((j) => j.toJson()).toList(),
-      'aptitudeAssessments':
-          aptitudeAssessments.map((a) => a.toJson()).toList(),
-      'mockInterviewAssessments':
-          mockInterviewAssessments.map((m) => m.toJson()).toList(),
-      'communicationAssessments':
-          communicationAssessments.map((c) => c.toJson()).toList(),
+      'aptitudeTestResult': aptitudeTestResult.map((j) => j.toJson()).toList(),
+      'mockInterviewResult':
+          mockInterviewResult.map((j) => j.toJson()).toList(),
       'gitHubData': gitHubData?.toJson(),
       'leetCodeData': leetCodeData?.toJson(),
     };
@@ -192,16 +180,6 @@ class User {
       return value.map((e) => e?.toString() ?? '').toList();
     }
     return [];
-  }
-
-  static Map<String, String>? _parseStringMap(dynamic value) {
-    if (value == null) return null;
-    if (value is Map) {
-      return Map<String, String>.from(
-        value.map((key, value) => MapEntry(key.toString(), value.toString())),
-      );
-    }
-    return null;
   }
 
   static List<T> _parseList<T>(
@@ -263,16 +241,16 @@ class GitHubData {
 
 class LeetCodeData {
   final List<double> ratingHistory;
-  final Map<String, double> problemStats;
-  final Map<String, double> languageUsage;
-  final Map<String, double> skillStats;
+  final Map<String, int> problemStats;
+  final Map<String, int> languageUsage;
+  final Map<String, int> skillStats;
   final SubmissionStats submissionStats;
 
   LeetCodeData({
     List<double>? ratingHistory,
-    Map<String, double>? problemStats,
-    Map<String, double>? languageUsage,
-    Map<String, double>? skillStats,
+    Map<String, int>? problemStats,
+    Map<String, int>? languageUsage,
+    Map<String, int>? skillStats,
     required this.submissionStats,
   })  : ratingHistory = ratingHistory ?? [],
         problemStats = problemStats ?? {},
@@ -294,9 +272,9 @@ class LeetCodeData {
 
     return LeetCodeData(
       ratingHistory: _parseDoubleList(json['ratingHistory']),
-      problemStats: _parseDoubleMap(json['problemStats']),
-      languageUsage: _parseDoubleMap(json['languageUsage']),
-      skillStats: _parseDoubleMap(json['skillStats']),
+      problemStats: _parseIntMap(json['problemStats']),
+      languageUsage: _parseIntMap(json['languageUsage']),
+      skillStats: _parseIntMap(json['skillStats']),
       submissionStats: SubmissionStats.fromJson(
           json['submissionStats'] as Map<String, dynamic>? ?? {}),
     );
@@ -310,11 +288,11 @@ class LeetCodeData {
     return [];
   }
 
-  static Map<String, double> _parseDoubleMap(dynamic value) {
+  static Map<String, int> _parseIntMap(dynamic value) {
     if (value == null) return {};
     if (value is Map) {
       return value.map((key, value) =>
-          MapEntry(key.toString(), (value as num?)?.toDouble() ?? 0.0));
+          MapEntry(key.toString(), (value as num?)?.toInt() ?? 0));
     }
     return {};
   }
@@ -442,106 +420,6 @@ class Experience {
       jobTitle: json['jobTitle'] as String? ?? '',
       startDate: json['startDate'] as String? ?? '',
       endDate: json['endDate'] as String? ?? '',
-    );
-  }
-}
-
-abstract class Assessment {
-  final double overallScore;
-  final DateTime date;
-  final Map<String, double> detailedScores;
-
-  Assessment({
-    required this.overallScore,
-    required this.date,
-    required this.detailedScores,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'overallScore': overallScore,
-        'date': date.toIso8601String(),
-        'detailedScores': detailedScores,
-      };
-
-  static Map<String, double> _parseDetailedScores(dynamic scores) {
-    if (scores == null) return {};
-    if (scores is Map) {
-      return scores.map(
-        (key, value) => MapEntry(
-          key.toString(),
-          (value as num?)?.toDouble() ?? 0.0,
-        ),
-      );
-    }
-    return {};
-  }
-
-  static DateTime _parseDateTime(String? dateStr) {
-    if (dateStr == null) return DateTime.now();
-    try {
-      return DateTime.parse(dateStr);
-    } catch (e) {
-      return DateTime.now();
-    }
-  }
-}
-
-class AptitudeAssessment extends Assessment {
-  AptitudeAssessment({
-    required super.overallScore,
-    required super.date,
-    required super.detailedScores,
-  });
-
-  factory AptitudeAssessment.fromJson(Map<String, dynamic>? json) {
-    if (json == null) {
-      throw ArgumentError('JSON cannot be null');
-    }
-
-    return AptitudeAssessment(
-      overallScore: (json['overallScore'] as num?)?.toDouble() ?? 0.0,
-      date: Assessment._parseDateTime(json['date'] as String?),
-      detailedScores: Assessment._parseDetailedScores(json['detailedScores']),
-    );
-  }
-}
-
-class MockInterviewAssessment extends Assessment {
-  MockInterviewAssessment({
-    required super.overallScore,
-    required super.date,
-    required super.detailedScores,
-  });
-
-  factory MockInterviewAssessment.fromJson(Map<String, dynamic>? json) {
-    if (json == null) {
-      throw ArgumentError('JSON cannot be null');
-    }
-
-    return MockInterviewAssessment(
-      overallScore: (json['overallScore'] as num?)?.toDouble() ?? 0.0,
-      date: Assessment._parseDateTime(json['date'] as String?),
-      detailedScores: Assessment._parseDetailedScores(json['detailedScores']),
-    );
-  }
-}
-
-class CommunicationAssessment extends Assessment {
-  CommunicationAssessment({
-    required super.overallScore,
-    required super.date,
-    required super.detailedScores,
-  });
-
-  factory CommunicationAssessment.fromJson(Map<String, dynamic>? json) {
-    if (json == null) {
-      throw ArgumentError('JSON cannot be null');
-    }
-
-    return CommunicationAssessment(
-      overallScore: (json['overallScore'] as num?)?.toDouble() ?? 0.0,
-      date: Assessment._parseDateTime(json['date'] as String?),
-      detailedScores: Assessment._parseDetailedScores(json['detailedScores']),
     );
   }
 }
