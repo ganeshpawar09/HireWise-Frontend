@@ -14,49 +14,28 @@ class JobSearchPage extends StatefulWidget {
 
 class _JobSearchPageState extends State<JobSearchPage> {
   final _formKey = GlobalKey<FormState>();
-  final _roleController = TextEditingController();
+  final _clusterNameController = TextEditingController();
   final _isSearching = false;
 
   @override
   void dispose() {
-    _roleController.dispose();
+    _clusterNameController.dispose();
     super.dispose();
   }
 
   List<String> filteredRoles = [];
-  final List<String> roles = [
-    'Software Engineer',
-    'Data Scientist',
-    'Product Manager',
-    'UI/UX Designer',
-    'Frontend Developer',
-    'Backend Developer',
-    'Full Stack Developer',
-    'DevOps Engineer',
-    'Cloud Architect',
-    'Machine Learning Engineer',
-    'AI Specialist',
-    'Mobile App Developer',
-    'System Administrator',
-    'Database Administrator',
-    'Business Analyst',
-    'Project Manager',
-    'Quality Assurance Engineer',
-    'Technical Writer',
-    'Solutions Architect',
-    'Network Engineer',
-    'Security Engineer',
-    'Data Analyst',
-    'Data Engineer',
-    'Scrum Master',
-    'Digital Marketing Manager'
+  final List<String> clusterName = [
+    "Web Developer",
+    "Mobile Developer",
+    "Backend Developer",
+    "AI/ML Developer"
   ];
 
   void _filterRoles(String input) {
     setState(() {
       filteredRoles = input.isEmpty
           ? []
-          : roles
+          : clusterName
               .where((r) => r.toLowerCase().contains(input.toLowerCase()))
               .toList();
     });
@@ -176,10 +155,10 @@ class _JobSearchPageState extends State<JobSearchPage> {
 
   Future<void> _performSearch() async {
     try {
-      if (_roleController.text.isNotEmpty) {
+      if (_clusterNameController.text.isNotEmpty) {
         await Provider.of<JobProvider>(context, listen: false).searchJobs(
           context,
-          role: _roleController.text,
+          clusterName: _clusterNameController.text,
         );
 
         if (mounted) {
@@ -187,7 +166,7 @@ class _JobSearchPageState extends State<JobSearchPage> {
             context,
             MaterialPageRoute(
               builder: (context) => JobSearchResultsPage(
-                role: _roleController.text,
+                clusterName: _clusterNameController.text,
               ),
             ),
           );
@@ -257,7 +236,7 @@ class _JobSearchPageState extends State<JobSearchPage> {
           padding: const EdgeInsets.all(20),
           children: [
             _buildTextField(
-              _roleController,
+              _clusterNameController,
               _filterRoles,
               filteredRoles,
               Icons.search_rounded,

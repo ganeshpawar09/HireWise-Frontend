@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/const/font.dart';
 import 'package:hirewise/pages/login/email_verification_page.dart';
-import 'package:hirewise/pages/prepzone/test/mockinterview/mock_interview_video_process_page.dart';
 import 'package:hirewise/widget/customBottomNavigator.dart';
 import 'package:provider/provider.dart';
 import 'package:hirewise/provider/user_provider.dart';
@@ -38,19 +37,11 @@ class _SplashPageState extends State<SplashPage> {
       if (userProvider.isAuthenticated) {
         Navigator.pushReplacement(
           context,
-          // MaterialPageRoute(
-          //   builder: (context) =>
-          //       const MockInterviewProcessPage(questionVideoMap: {
-          //     "Tell me about yourself.":
-          //         "https://res.cloudinary.com/dp900z4jx/video/upload/v1739980647/uutctyv0phy9hm80tg4m.mp4"
-          //   }),
-          // ),
           MaterialPageRoute(
             builder: (context) => const CustomBottomNavigator(),
           ),
         );
       } else {
-        print("New User");
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(

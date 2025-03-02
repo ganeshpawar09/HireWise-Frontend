@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/const/font.dart';
+import 'package:hirewise/pages/login/email_verification_page.dart';
+import 'package:hirewise/pages/splash/select_skill_page.dart';
 import 'package:hirewise/provider/user_provider.dart';
 import 'package:hirewise/widget/customBottomNavigator.dart';
 import 'package:provider/provider.dart';
@@ -40,18 +42,38 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
     setState(() => _isLoading = true);
 
     try {
-      await Provider.of<UserProvider>(context, listen: false)
-          .verifyOTP(context, widget.email, otp);
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      await userProvider.verifyOTP(context, widget.email, otp);
 
       if (!mounted) return;
 
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const CustomBottomNavigator()),
-        (route) => false,
-      );
+      final user = userProvider.user;
+      if (user != null) {
+        if (user.keySkills.length < 5) {
+          // Navigate to skills selection page if skills aren't sufficient
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const SelectSkillsPage()),
+          );
+        } else {
+          // User has sufficient skills, proceed to main app
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (context) => const CustomBottomNavigator()),
+          );
+        }
+      } else {
+        // User not authenticated, go to email verification
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) => const EmailVerificationPage()),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
-      print(e.toString());
+      debugPrint('Error during OTP verification: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Verification failed: ${e.toString()}')),
       );

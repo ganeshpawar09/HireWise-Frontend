@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/const/font.dart';
 import 'package:hirewise/models/aptitude_test_result_model.dart';
 import 'package:hirewise/models/question_model.dart';
+import 'package:hirewise/models/user_model.dart';
 import 'package:hirewise/pages/prepzone/test/aptitude/aptitude_result_page.dart';
+import 'package:hirewise/provider/topic_provider.dart';
 import 'package:hirewise/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -23,8 +26,9 @@ class _AptitudeTestPageState extends State<AptitudeTestPage> {
   late int totalTimeTaken;
   int currentQuestionIndex = 0;
   bool isTestComplete = false;
-  Map<int, int> selectedAnswers = {};
+  Map<Question, int> selectedOptions = {};
   DateTime? testStartTime;
+  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -34,6 +38,9 @@ class _AptitudeTestPageState extends State<AptitudeTestPage> {
     totalTimeTaken = 0;
     testStartTime = DateTime.now();
     _startTimer();
+    for (var question in testQuestions) {
+      selectedOptions[question] = -1;
+    }
   }
 
   void _startTimer() {
@@ -69,85 +76,202 @@ class _AptitudeTestPageState extends State<AptitudeTestPage> {
     setState(() {
       isTestComplete = true;
       totalTimeTaken = DateTime.now().difference(testStartTime!).inSeconds;
+      _isProcessing = true;
     });
 
-    // Calculate analytics during test completion
-    Map<String, TopicAnalysis> topicWiseAnalysis = {};
-    int correctAnswers = 0;
+    int totalCorrect = 0;
 
-    // Process questions and build analytics
-    for (int i = 0; i < testQuestions.length; i++) {
-      Question question = testQuestions[i];
-      bool isCorrect = selectedAnswers[i] == question.correctOptionIndex;
-      if (isCorrect) correctAnswers++;
-
-      // Calculate topic analysis
-      if (!topicWiseAnalysis.containsKey(question.topic)) {
-        topicWiseAnalysis[question.topic] = TopicAnalysis(
-          topic: question.topic,
-          totalQuestions: 1,
-          correctAnswers: isCorrect ? 1 : 0,
-          subTopics: {},
-          score: isCorrect ? 100.0 : 0.0,
-        );
-      } else {
-        var currentTopic = topicWiseAnalysis[question.topic]!;
-        topicWiseAnalysis[question.topic] = TopicAnalysis(
-          topic: question.topic,
-          totalQuestions: currentTopic.totalQuestions + 1,
-          correctAnswers: currentTopic.correctAnswers + (isCorrect ? 1 : 0),
-          subTopics: currentTopic.subTopics,
-          score: ((currentTopic.correctAnswers + (isCorrect ? 1 : 0)) /
-                  (currentTopic.totalQuestions + 1)) *
-              100,
-        );
+    // Iterate over selected options and compare with correct answers
+    selectedOptions.forEach((question, selectedOptionIndex) {
+      if (selectedOptionIndex != -1 &&
+          question.correctOptionIndex == selectedOptionIndex) {
+        totalCorrect++;
       }
-
-      // Calculate subtopic analysis
-      var topicAnalysis = topicWiseAnalysis[question.topic]!;
-      if (!topicAnalysis.subTopics.containsKey(question.subTopic)) {
-        topicAnalysis.subTopics[question.subTopic] = SubTopicAnalysis(
-          subTopic: question.subTopic,
-          totalQuestions: 1,
-          correctAnswers: isCorrect ? 1 : 0,
-          score: isCorrect ? 100.0 : 0.0,
-        );
-      } else {
-        var currentSubTopic = topicAnalysis.subTopics[question.subTopic]!;
-        topicAnalysis.subTopics[question.subTopic] = SubTopicAnalysis(
-          subTopic: question.subTopic,
-          totalQuestions: currentSubTopic.totalQuestions + 1,
-          correctAnswers: currentSubTopic.correctAnswers + (isCorrect ? 1 : 0),
-          score: ((currentSubTopic.correctAnswers + (isCorrect ? 1 : 0)) /
-                  (currentSubTopic.totalQuestions + 1)) *
-              100,
-        );
-      }
-    }
+    });
 
     final testResult = AptitudeTestResult(
-      date: DateTime.now(),
-      analytics: TestAnalytics(
-        totalQuestions: testQuestions.length,
-        correctAnswers: correctAnswers,
-        averageTimePerQuestion: totalTimeTaken / testQuestions.length,
+        testDate: DateTime.now(),
         totalTimeTaken: totalTimeTaken,
-        topicWiseAnalysis: topicWiseAnalysis,
-        overallScore: (correctAnswers / testQuestions.length) * 100,
+        selectedOptions: selectedOptions,
+        overallScore: (totalCorrect / widget.questions.length) * 100);
+
+    TopicProvider topicProvider =
+        Provider.of<TopicProvider>(context, listen: false);
+
+    try {
+      bool updateSuccess =
+          await topicProvider.updateAptitudeResult(context, testResult);
+      print(updateSuccess);
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+
+        if (updateSuccess) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AptitudeResultPage(result: testResult),
+            ),
+          );
+        } else {
+          _showUpdateFailedDialog(testResult);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+        _showUpdateFailedDialog(testResult);
+      }
+    }
+  }
+
+  void _showUpdateFailedDialog(AptitudeTestResult testResult) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.black,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.red.withOpacity(0.3), width: 2),
+        ),
+        title: Text(
+          'Failed to Submit',
+          style: AppStyles.mondaB.copyWith(
+            fontSize: 24,
+            color: Colors.white,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'We couldn\'t save your test results. Please check your internet connection and try again.',
+              style: AppStyles.mondaN.copyWith(
+                fontSize: 16,
+                color: Colors.white70,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                _isProcessing = true;
+              });
+              _retrySubmitTest(testResult);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.withOpacity(0.2),
+              foregroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'Try Again',
+              style: AppStyles.mondaB.copyWith(
+                color: Colors.red,
+              ),
+            ),
+          ),
+        ],
       ),
-      timePerQuestion: widget.timePerQuestion,
-      totalTimeTaken: totalTimeTaken,
     );
-    UserProvider userProvider =
-        Provider.of<UserProvider>(context, listen: false);
-    userProvider.user!.aptitudeTestResult.add(testResult);
-    await userProvider.saveToLocal();
-    await userProvider.updateUserProfile(
-        context, {"aptitudeTestResult": userProvider.user!.aptitudeTestResult});
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TestResultsPage(result: testResult),
+  }
+
+  void _retrySubmitTest(AptitudeTestResult testResult) async {
+    TopicProvider topicProvider =
+        Provider.of<TopicProvider>(context, listen: false);
+
+    try {
+      bool updateSuccess =
+          await topicProvider.updateAptitudeResult(context, testResult);
+
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+
+        if (updateSuccess) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AptitudeResultPage(result: testResult),
+            ),
+          );
+        } else {
+          _showUpdateFailedDialog(testResult);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+        _showUpdateFailedDialog(testResult);
+      }
+    }
+  }
+
+  Widget _buildLoadingOverlay() {
+    return Container(
+      color: darkBackground.withOpacity(0.8),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: cardDark,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: CircularProgressIndicator(
+                      color: accentMint,
+                      strokeWidth: 3,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Processing your results...',
+                    style: AppStyles.mondaB.copyWith(
+                      color: Colors.white,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'This may take a moment',
+                    style: AppStyles.mondaN.copyWith(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -218,8 +342,14 @@ class _AptitudeTestPageState extends State<AptitudeTestPage> {
   }
 
   Widget _buildSubmitSummary() {
-    final answeredQuestions = selectedAnswers.length;
-    final unansweredQuestions = testQuestions.length - answeredQuestions;
+    int answeredCount = 0;
+    selectedOptions.forEach((question, selectedOption) {
+      if (selectedOption != -1) {
+        answeredCount++;
+      }
+    });
+
+    final unansweredQuestions = testQuestions.length - answeredCount;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -232,7 +362,7 @@ class _AptitudeTestPageState extends State<AptitudeTestPage> {
         children: [
           _buildSummaryRow(
             'Answered',
-            answeredQuestions,
+            answeredCount,
             Icons.check_circle,
             Colors.green,
           ),
@@ -296,7 +426,7 @@ class _AptitudeTestPageState extends State<AptitudeTestPage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.timer,
                   color: Colors.green,
                   size: 20,
@@ -337,11 +467,16 @@ class _AptitudeTestPageState extends State<AptitudeTestPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: _buildAppBar(),
-      body: _buildBody(),
-      bottomNavigationBar: _buildBottomNavigation(),
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: Colors.black,
+          appBar: _buildAppBar(),
+          body: _buildBody(),
+          bottomNavigationBar: _buildBottomNavigation(),
+        ),
+        if (_isProcessing) _buildLoadingOverlay(),
+      ],
     );
   }
 
@@ -465,7 +600,8 @@ class _AptitudeTestPageState extends State<AptitudeTestPage> {
   }
 
   Widget _buildOptionCard(int optionIndex) {
-    final isSelected = selectedAnswers[currentQuestionIndex] == optionIndex;
+    final isSelected =
+        selectedOptions[testQuestions[currentQuestionIndex]] == optionIndex;
     final option = testQuestions[currentQuestionIndex].options[optionIndex];
 
     return Container(
@@ -477,7 +613,7 @@ class _AptitudeTestPageState extends State<AptitudeTestPage> {
         icon: isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
         onTap: () {
           setState(() {
-            selectedAnswers[currentQuestionIndex] = optionIndex;
+            selectedOptions[testQuestions[currentQuestionIndex]] = optionIndex;
           });
         },
         isSelected: isSelected,

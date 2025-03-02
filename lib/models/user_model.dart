@@ -25,7 +25,7 @@ class User {
   final List<Experience> experience;
   final List<Project> projects;
   final List<Job> appliedJobs;
-  final List<AptitudeTestResult> aptitudeTestResult;
+  List<AptitudeTestResult> aptitudeTestResult;
   final List<MockInterviewResult> mockInterviewResult;
   final GitHubData? gitHubData;
   final LeetCodeData? leetCodeData;

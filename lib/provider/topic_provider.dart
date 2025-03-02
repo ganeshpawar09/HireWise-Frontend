@@ -1,10 +1,15 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:hirewise/models/aptitude_test_result_model.dart';
 import 'package:hirewise/models/question_model.dart';
+import 'package:hirewise/provider/user_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:hirewise/server.dart';
 
 class TopicProvider extends ChangeNotifier {
+  final UserProvider userProvider;
+  TopicProvider({required this.userProvider});
+
   static const String baseUrl = '$server/topic';
   Map<String, List<String>>? _topics;
   List<Question>? _questions;
@@ -16,10 +21,10 @@ class TopicProvider extends ChangeNotifier {
   String? get error => _error;
   bool get isLoading => _isLoading;
 
-  void _showSnackBar(BuildContext context, String message, {Color? color}) {
+  void _showSnackBar(BuildContext context, String message) {
     final snackBar = SnackBar(
       content: Text(message),
-      backgroundColor: color ?? Colors.black,
+      backgroundColor: Colors.black,
     );
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
@@ -29,7 +34,7 @@ class TopicProvider extends ChangeNotifier {
       final errorData = json.decode(response.body);
       _error = errorData['message'] ?? 'An error occurred';
       notifyListeners();
-      _showSnackBar(context, _error!, color: Colors.red);
+      _showSnackBar(context, _error!);
       throw Exception(_error);
     }
   }
@@ -80,17 +85,15 @@ class TopicProvider extends ChangeNotifier {
         headers: {'Content-Type': 'application/json'},
       );
 
-      _handleError(context, response);
-
+      // _handleError(context, response);
+      print(response.body);
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         final questionsData = responseData['data']['questions'];
-
         _questions = List<Question>.from(
           questionsData.map((question) => Question.fromJson(question)),
         );
         print(_questions);
-
         notifyListeners();
       }
     } catch (e) {
@@ -100,6 +103,47 @@ class TopicProvider extends ChangeNotifier {
         "Failed to fetch questions. Please try again.",
       );
       notifyListeners();
+    }
+  }
+
+  Future<bool> updateAptitudeResult(
+      BuildContext context, AptitudeTestResult aptitudeResult) async {
+    try {
+      print("Sending request to update aptitude result...");
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/upload-result'),
+        body: json.encode({
+          "userId": userProvider.user!.id,
+          "overallScore": aptitudeResult.overallScore,
+          "totalTimeTaken": aptitudeResult.totalTimeTaken,
+          "testDate": aptitudeResult.testDate.toIso8601String(),
+          // ✅ Correctly format selectedOptions
+          "selectedOptions":
+              aptitudeResult.selectedOptions.entries.map((entry) {
+            return {
+              "question": entry.key.id, // ✅ Send question ID
+              "option": entry.value, // ✅ Send the selected option value
+            };
+          }).toList(),
+        }),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 201) {
+        userProvider.user!.aptitudeTestResult.add(aptitudeResult);
+        await userProvider.saveToLocal();
+        notifyListeners();
+        return true;
+      }
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = e.toString();
+      _showSnackBar(
+          context, "Failed to update test results. Please try again.");
+      notifyListeners();
+      return false;
     }
   }
 

@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/const/font.dart';
 import 'package:hirewise/models/aptitude_test_result_model.dart';
+import 'package:hirewise/models/mock_interview_result_model.dart';
 import 'package:hirewise/models/user_model.dart';
-import 'package:hirewise/pages/profile/assessment_detail_page.dart';
+import 'package:hirewise/pages/profile/aptitude_detail_page.dart';
 import 'package:hirewise/pages/profile/edit/achievement_edit_page.dart';
 import 'package:hirewise/pages/profile/edit/basic_detail_page.dart';
 import 'package:hirewise/pages/profile/edit/education_edit_page.dart';
@@ -16,6 +17,7 @@ import 'package:hirewise/pages/profile/edit/profile_summary_edit_page.dart';
 import 'package:hirewise/pages/profile/edit/project_edit_page.dart';
 import 'package:hirewise/pages/profile/edit/skill_edit_page.dart';
 import 'package:hirewise/pages/profile/edit/social_link_edit.dart';
+import 'package:hirewise/pages/profile/mock_interview_detail_page.dart';
 import 'package:hirewise/pages/profile/profile_builder_page.dart';
 import 'package:hirewise/pages/profile/profile_feedback_page.dart';
 import 'package:hirewise/provider/user_provider.dart';
@@ -105,12 +107,13 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 16),
               _buildSectionCard('Profile summary', _buildProfileSummary()),
               const SizedBox(height: 16),
-              _buildAssessmentCard(
-                'Aptitude',
+              _buildAptitudeCard(
                 widget.user.aptitudeTestResult,
-                Colors.blue,
-                MdiIcons.brain,
+                customBlue,
               ),
+              const SizedBox(height: 16),
+              _buildMockInterviewCard(
+                  widget.user.mockInterviewResult, accentPink),
               const SizedBox(height: 16),
               _buildSectionCard('Education', _buildEducation()),
               const SizedBox(height: 16),
@@ -928,22 +931,49 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Widget _buildAssessmentCard(
-    String type,
+  Widget _buildAptitudeCard(
     List<AptitudeTestResult> assessments,
     Color color,
-    IconData icon,
   ) {
-    double latestScore =
-        assessments.isNotEmpty ? assessments.last.analytics.overallScore : 0;
+    bool hasTests = assessments.isNotEmpty;
+
+    // Calculate statistics if tests exist
+    double averageScore = 0;
+    int averageTime = 0;
+    double latestScore = hasTests ? assessments.last.overallScore : 0;
+    int totalQuestions = 0;
+
+    if (hasTests) {
+      double totalScore = 0;
+      int totalTime = 0;
+
+      for (var test in assessments) {
+        totalScore += test.overallScore;
+        totalTime += test.totalTimeTaken;
+        // Count questions from the most recent test
+        if (test == assessments.last) {
+          totalQuestions = test.selectedOptions.length;
+        }
+      }
+
+      averageScore = totalScore / assessments.length;
+      averageTime = (totalTime / assessments.length).round();
+    }
+
+    // Format time from seconds to mm:ss
+    String formatTime(int seconds) {
+      final mins = seconds ~/ 60;
+      final secs = seconds % 60;
+      return '$mins:${secs.toString().padLeft(2, '0')}';
+    }
 
     return InkWell(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => AssessmentDetailPage(
-              type: type,
+            builder: (context) => AptitudeDetailPage(
+              type: 'Aptitude Test',
               assessments: assessments,
             ),
           ),
@@ -955,47 +985,131 @@ class _ProfilePageState extends State<ProfilePage> {
         decoration: BoxDecoration(
           color: cardBackgroundColor,
           borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              color.withOpacity(0.05),
+              cardBackgroundColor,
+            ],
+          ),
           border: Border.all(
             color: color.withOpacity(0.3),
             width: 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(icon, color: color),
-                const SizedBox(width: 8),
-                Text(
-                  type,
-                  style: AppStyles.mondaB.copyWith(fontSize: 16),
+                Row(
+                  children: [
+                    Icon(Icons.psychology, color: color),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Aptitude Test',
+                      style: AppStyles.mondaB.copyWith(fontSize: 16),
+                    ),
+                  ],
                 ),
+                if (hasTests)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${assessments.length} completed',
+                      style: AppStyles.mondaN.copyWith(
+                        fontSize: 12,
+                        color: color,
+                      ),
+                    ),
+                  ),
               ],
             ),
-            const SizedBox(height: 16),
-            if (assessments.isNotEmpty) ...[
-              Text(
-                'Latest Score',
-                style: AppStyles.mondaN.copyWith(color: Colors.grey),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${latestScore.toStringAsFixed(1)}%',
-                style: AppStyles.mondaB.copyWith(
-                  fontSize: 24,
-                  color: color,
+            const SizedBox(height: 12),
+            if (hasTests) ...[
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildAptitudeMetric(
+                        'Latest\nScore',
+                        '${latestScore.toStringAsFixed(0)}%',
+                        Icons.trending_up,
+                        color,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildAptitudeMetric(
+                        'Average\nScore',
+                        '${averageScore.toStringAsFixed(0)}%',
+                        Icons.bar_chart,
+                        color,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildAptitudeMetric(
+                        'Avg. Time\nper Test',
+                        formatTime(averageTime),
+                        Icons.timer,
+                        color,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildAptitudeMetric(
+                        'Questions\nAnswered',
+                        totalQuestions.toString(),
+                        Icons.quiz,
+                        color,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                '${assessments.length} tests taken',
-                style: AppStyles.mondaN.copyWith(color: Colors.grey),
+                "Last test: ${hasTests ? '${assessments.last.testDate.day}/${assessments.last.testDate.month}/${assessments.last.testDate.year}' : ''}",
+                style:
+                    AppStyles.mondaN.copyWith(color: Colors.grey, fontSize: 12),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ] else
-              Text(
-                'No tests taken yet',
-                style: AppStyles.mondaN.copyWith(color: Colors.grey),
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.quiz_outlined,
+                          size: 32, color: Colors.grey.withOpacity(0.7)),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No aptitude tests taken yet',
+                        style: AppStyles.mondaN.copyWith(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Take tests to measure your analytical abilities',
+                        style: AppStyles.mondaN
+                            .copyWith(color: color, fontSize: 12),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
               ),
           ],
         ),
@@ -1003,89 +1117,247 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Add this after _buildSocialLinks() in your ProfilePage class
-  // Widget _buildGitHubSection() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       const Row(
-  //         children: [
-  //           Icon(Icons.code, color: Colors.white), // Replace with GitHub icon
-  //           SizedBox(width: 8),
-  //           Text('GitHub Profile'),
-  //         ],
-  //       ),
-  //       const SizedBox(height: 16),
-  //       Row(
-  //         mainAxisAlignment: MainAxisAlignment.spaceAround,
-  //         children: [
-  //           _buildGitHubStat(Icons.folder,
-  //               '${widget.user.gitHubData!.repositories}', 'Repositories'),
-  //           _buildGitHubStat(
-  //               Icons.star_border, '${widget.user.gitHubData!.stars}', 'Stars'),
-  //           _buildGitHubStat(Icons.people,
-  //               '${widget.user.gitHubData!.followers}', 'Followers'),
-  //           _buildGitHubStat(Icons.person_add,
-  //               '${widget.user.gitHubData!.following}', 'Following'),
-  //         ],
-  //       ),
-  //       const SizedBox(height: 16),
-  //       const Text('Language Distribution'),
-  //       const SizedBox(height: 8),
-  //       _buildLanguageDistribution(),
-  //       const SizedBox(height: 8),
-  //       const Row(
-  //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //         children: [
-  //           Text('Profile Views'),
-  //           Text(
-  //             '600 this month',
-  //             style: const TextStyle(color: Colors.green),
-  //           ),
-  //         ],
-  //       ),
-  //     ],
-  //   );
-  // }
+// Helper widget for aptitude metrics - same structure as mock interview metrics
+  Widget _buildAptitudeMetric(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          color: color.withOpacity(0.7),
+          size: 20,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: AppStyles.mondaB.copyWith(
+            fontSize: 18,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: AppStyles.mondaN.copyWith(
+            color: Colors.grey,
+            fontSize: 11,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
 
-  // Widget _buildLanguageDistribution() {
-  //   return Column(
-  //     children:
-  //         widget.user.gitHubData!.languageDistribution.entries.map((entry) {
-  //       return Column(
-  //         children: [
-  //           Row(
-  //             children: [
-  //               SizedBox(
-  //                 width: 100,
-  //                 child: Text(entry.key),
-  //               ),
-  //               Expanded(
-  //                 child: ClipRRect(
-  //                   borderRadius: BorderRadius.circular(10),
-  //                   child: LinearProgressIndicator(
-  //                     value: entry.value / 100,
-  //                     backgroundColor: Colors.grey[800],
-  //                     valueColor: AlwaysStoppedAnimation<Color>(
-  //                       getRandomColor(),
-  //                     ),
-  //                     minHeight: 8,
-  //                   ),
-  //                 ),
-  //               ),
-  //               const SizedBox(width: 8),
-  //               Text(
-  //                 '${entry.value}%',
-  //                 style: const TextStyle(fontSize: 12),
-  //               ),
-  //             ],
-  //           ),
-  //           const SizedBox(height: 8),
-  //         ],
-  //       );
-  //     }).toList(),
-  //   );
-  // }
+// Mock Interview Widget (Different Design)
+  Widget _buildMockInterviewCard(
+    List<MockInterviewResult> results,
+    Color color,
+  ) {
+    bool hasInterviews = results.isNotEmpty;
+
+    // Calculate averages if there are interviews
+    double avgVideoConfidence = 0;
+    double avgAudioConfidence = 0;
+    double avgFluency = 0;
+    int totalFillerWords = 0;
+
+    if (hasInterviews) {
+      for (var result in results) {
+        avgVideoConfidence += result.videoConfidence;
+        avgAudioConfidence += result.audioConfidence;
+        avgFluency += result.fluencyPercentage;
+        totalFillerWords += result.transcription.totalFillers;
+      }
+      avgVideoConfidence /= results.length;
+      avgAudioConfidence /= results.length;
+      avgFluency /= results.length;
+      totalFillerWords = (totalFillerWords / results.length).round();
+    }
+
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MockInterviewDetailPage(
+              results: results,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        height: 200,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cardBackgroundColor,
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              color.withOpacity(0.05),
+              cardBackgroundColor,
+            ],
+          ),
+          border: Border.all(
+            color: color.withOpacity(0.3),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.videocam, color: color),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Mock Interview',
+                      style: AppStyles.mondaB.copyWith(fontSize: 16),
+                    ),
+                  ],
+                ),
+                if (hasInterviews)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${results.length} completed',
+                      style: AppStyles.mondaN.copyWith(
+                        fontSize: 12,
+                        color: color,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (hasInterviews) ...[
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildInterviewMetric(
+                        'Video\nConfidence',
+                        '${avgVideoConfidence.toStringAsFixed(0)}%',
+                        Icons.face,
+                        color,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildInterviewMetric(
+                        'Audio\nConfidence',
+                        '${avgAudioConfidence.toStringAsFixed(0)}%',
+                        Icons.mic,
+                        color,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildInterviewMetric(
+                        'Fluency\nScore',
+                        '${avgFluency.toStringAsFixed(0)}%',
+                        Icons.auto_graph,
+                        color,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildInterviewMetric(
+                        'Filler\nWords',
+                        totalFillerWords.toString(),
+                        Icons.text_fields,
+                        color,
+                        isNegative: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+            ] else
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.video_camera_front_outlined,
+                          size: 32, color: Colors.grey.withOpacity(0.7)),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No interviews taken yet',
+                        style: AppStyles.mondaN.copyWith(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Practice with mock interviews to improve your skills',
+                        style: AppStyles.mondaN
+                            .copyWith(color: color, fontSize: 12),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+// Helper widget for mock interview metrics
+  Widget _buildInterviewMetric(
+    String label,
+    String value,
+    IconData icon,
+    Color color, {
+    bool isNegative = false,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          color: color.withOpacity(0.7),
+          size: 20,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: AppStyles.mondaB.copyWith(
+            fontSize: 18,
+            color: isNegative ? Colors.orange : color,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: AppStyles.mondaN.copyWith(
+            color: Colors.grey,
+            fontSize: 11,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
 
   Widget _buildCodingProfiles() {
     return Card(
@@ -1536,19 +1808,4 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
-
-  // Color _getLanguageColor(String language) {
-  //   switch (language) {
-  //     case 'JavaScript':
-  //       return Colors.yellow;
-  //     case 'Python':
-  //       return Colors.blue;
-  //     case 'Java':
-  //       return Colors.orange;
-  //     case 'C++':
-  //       return Colors.purple;
-  //     default:
-  //       return Colors.grey;
-  //   }
-  // }
 }

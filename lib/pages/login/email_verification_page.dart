@@ -27,7 +27,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
 
       if (!mounted) return;
 
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) =>
@@ -36,11 +36,6 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
       );
     } catch (e) {
       if (!mounted) return;
-
-      print(e.toString());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

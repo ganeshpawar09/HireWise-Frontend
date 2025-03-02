@@ -1,146 +1,47 @@
+import 'package:hirewise/models/question_model.dart';
+
 class AptitudeTestResult {
-  final TestAnalytics analytics;
-  final int timePerQuestion;
+  final Map<Question, int> selectedOptions;
   final int totalTimeTaken;
-  final DateTime date;
-
-  AptitudeTestResult({
-    required this.analytics,
-    required this.timePerQuestion,
-    required this.totalTimeTaken,
-    required this.date,
-  });
-
-  factory AptitudeTestResult.fromJson(Map<String, dynamic> json) {
-    return AptitudeTestResult(
-      analytics: TestAnalytics.fromJson(json['analytics']),
-      timePerQuestion: json['timePerQuestion'],
-      totalTimeTaken: json['totalTimeTaken'],
-      date: DateTime.parse(json['date'] as String),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'analytics': analytics.toJson(),
-      'timePerQuestion': timePerQuestion,
-      'totalTimeTaken': totalTimeTaken,
-      'date': date.toIso8601String(),
-    };
-  }
-}
-
-class TestAnalytics {
-  final int totalQuestions;
-  final int correctAnswers;
-  final double averageTimePerQuestion;
-  final int totalTimeTaken;
-  final Map<String, TopicAnalysis> topicWiseAnalysis;
+  final DateTime testDate;
   final double overallScore;
 
-  TestAnalytics({
-    required this.totalQuestions,
-    required this.correctAnswers,
-    required this.averageTimePerQuestion,
+  AptitudeTestResult({
+    required this.selectedOptions,
     required this.totalTimeTaken,
-    required this.topicWiseAnalysis,
+    required this.testDate,
     required this.overallScore,
   });
 
-  factory TestAnalytics.fromJson(Map<String, dynamic> json) {
-    return TestAnalytics(
-      totalQuestions: json['totalQuestions'],
-      correctAnswers: json['correctAnswers'],
-      averageTimePerQuestion:
-          (json['averageTimePerQuestion'] as num).toDouble(),
-      totalTimeTaken: json['totalTimeTaken'],
-      topicWiseAnalysis:
-          (json['topicWiseAnalysis'] as Map<String, dynamic>).map(
-        (key, value) => MapEntry(key, TopicAnalysis.fromJson(value)),
-      ),
+  factory AptitudeTestResult.fromJson(Map<String, dynamic> json) {
+    // Parse selectedOptions as a list of objects
+    final selectedOptionsList = (json['selectedOptions'] as List)
+        .map((item) {
+          final question = Question.fromJson(item['question'] as Map<String, dynamic>);
+          final option = item['option'] as int;
+          return MapEntry(question, option);
+        })
+        .toList();
+
+    return AptitudeTestResult(
+      selectedOptions: Map.fromEntries(selectedOptionsList),
+      totalTimeTaken: json['totalTimeTaken'] as int,
+      testDate: DateTime.parse(json['testDate'] as String),
       overallScore: (json['overallScore'] as num).toDouble(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'totalQuestions': totalQuestions,
-      'correctAnswers': correctAnswers,
-      'averageTimePerQuestion': averageTimePerQuestion,
+      'selectedOptions': selectedOptions.entries
+          .map((entry) => {
+                'question': entry.key.toJson(),
+                'option': entry.value,
+              })
+          .toList(),
       'totalTimeTaken': totalTimeTaken,
-      'topicWiseAnalysis':
-          topicWiseAnalysis.map((key, value) => MapEntry(key, value.toJson())),
+      'testDate': testDate.toIso8601String(),
       'overallScore': overallScore,
-    };
-  }
-}
-
-class TopicAnalysis {
-  final String topic;
-  final int totalQuestions;
-  final int correctAnswers;
-  final Map<String, SubTopicAnalysis> subTopics;
-  final double score;
-
-  TopicAnalysis({
-    required this.topic,
-    required this.totalQuestions,
-    required this.correctAnswers,
-    required this.subTopics,
-    required this.score,
-  });
-
-  factory TopicAnalysis.fromJson(Map<String, dynamic> json) {
-    return TopicAnalysis(
-      topic: json['topic'],
-      totalQuestions: json['totalQuestions'],
-      correctAnswers: json['correctAnswers'],
-      subTopics: (json['subTopics'] as Map<String, dynamic>).map(
-        (key, value) => MapEntry(key, SubTopicAnalysis.fromJson(value)),
-      ),
-      score: (json['score'] as num).toDouble(),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'topic': topic,
-      'totalQuestions': totalQuestions,
-      'correctAnswers': correctAnswers,
-      'subTopics': subTopics.map((key, value) => MapEntry(key, value.toJson())),
-      'score': score,
-    };
-  }
-}
-
-class SubTopicAnalysis {
-  final String subTopic;
-  final int totalQuestions;
-  final int correctAnswers;
-  final double score;
-
-  SubTopicAnalysis({
-    required this.subTopic,
-    required this.totalQuestions,
-    required this.correctAnswers,
-    required this.score,
-  });
-
-  factory SubTopicAnalysis.fromJson(Map<String, dynamic> json) {
-    return SubTopicAnalysis(
-      subTopic: json['subTopic'],
-      totalQuestions: json['totalQuestions'],
-      correctAnswers: json['correctAnswers'],
-      score: (json['score'] as num).toDouble(),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'subTopic': subTopic,
-      'totalQuestions': totalQuestions,
-      'correctAnswers': correctAnswers,
-      'score': score,
     };
   }
 }

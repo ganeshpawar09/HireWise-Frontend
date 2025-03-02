@@ -18,7 +18,11 @@ class HireWise extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => TopicProvider()),
+        ChangeNotifierProxyProvider<UserProvider, TopicProvider>(
+          create: (_) => TopicProvider(userProvider: UserProvider()),
+          update: (_, userProvider, jobProvider) =>
+              TopicProvider(userProvider: userProvider),
+        ),
         ChangeNotifierProxyProvider<UserProvider, JobProvider>(
           create: (_) => JobProvider(userProvider: UserProvider()),
           update: (_, userProvider, jobProvider) =>

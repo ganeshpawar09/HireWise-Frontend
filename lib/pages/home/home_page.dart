@@ -15,21 +15,36 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
-      GlobalKey<RefreshIndicatorState>();
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
 
   final ScrollController _recommendedController = ScrollController();
+  final ScrollController _mightLikeController = ScrollController();
+
+  // Add refresh indicator keys for each tab
+  final GlobalKey<RefreshIndicatorState> _recommendedRefreshKey =
+      GlobalKey<RefreshIndicatorState>();
+  final GlobalKey<RefreshIndicatorState> _mightLikeRefreshKey =
+      GlobalKey<RefreshIndicatorState>();
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _initialFetch();
+
+    // Listen for tab changes to ensure proper refresh behavior
+    _tabController.addListener(() {
+      setState(() {}); // Rebuild when tab changes
+    });
   }
 
   @override
   void dispose() {
     _recommendedController.dispose();
+    _mightLikeController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -38,19 +53,21 @@ class _HomePageState extends State<HomePage> {
     if (!mounted) return;
 
     try {
-      await fetch();
+      await fetch(false);
     } catch (e) {
       if (!mounted) return;
       _showError("Failed to load initial data");
     }
   }
 
-  Future<void> fetch() async {
+  Future<void> fetch(bool isRefresh) async {
     if (mounted) {
       final jobProvider = Provider.of<JobProvider>(context, listen: false);
 
       try {
-        if (jobProvider.recommendedJobs.isEmpty) {
+        if (isRefresh ||
+            jobProvider.recommendedJobs.isEmpty ||
+            jobProvider.youMightLikeJobs.isEmpty) {
           await jobProvider.getRecommendedJobs(context);
         }
       } catch (e) {
@@ -59,13 +76,13 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> refreshRecommendedJobs() async {
+  Future<void> refreshJobs() async {
     final jobProvider = Provider.of<JobProvider>(context, listen: false);
 
     try {
       await jobProvider.getRecommendedJobs(context);
     } catch (e) {
-      _showError("Something went wrong while fetching jobs");
+      _showError("Something went wrong while refreshing jobs");
     }
   }
 
@@ -80,74 +97,97 @@ class _HomePageState extends State<HomePage> {
         action: SnackBarAction(
           label: 'Retry',
           textColor: Colors.white,
-          onPressed: () => fetch(),
+          onPressed: () => fetch(true),
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState({required VoidCallback onRefresh}) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            "assets/icons/error.png",
-            height: 100,
-            width: 100,
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 70),
-            child: Text(
-              "No jobs found",
-              textAlign: TextAlign.center,
-              style: AppStyles.mondaB.copyWith(fontSize: 18),
+  Widget _buildEmptyState() {
+    return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        SliverFillRemaining(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  "assets/icons/error.png",
+                  height: 100,
+                  width: 100,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.work_off_outlined,
+                    size: 100,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  "No Jobs Found",
+                  textAlign: TextAlign.center,
+                  style: AppStyles.mondaB.copyWith(
+                    fontSize: 18,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: customBlue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    minimumSize: const Size(200, 45),
+                  ),
+                  onPressed: () => fetch(true),
+                  child: Text(
+                    "Refresh",
+                    style: AppStyles.mondaB.copyWith(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: customBlue,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(5),
-              ),
-              minimumSize: const Size(200, 40),
-            ),
-            onPressed: onRefresh,
-            child: Text(
-              "Refresh",
-              style: AppStyles.mondaB.copyWith(
-                color: Colors.black,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          )
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildJobList(List<Job> jobs, ScrollController scrollController,
-      {required VoidCallback onRefresh}) {
+      GlobalKey<RefreshIndicatorState> refreshKey, int page) {
     if (jobs.isEmpty) {
-      return _buildEmptyState(onRefresh: onRefresh);
+      return RefreshIndicator(
+        key: refreshKey,
+        color: customBlue,
+        onRefresh: () => fetch(true),
+        child: _buildEmptyState(),
+      );
     }
 
-    return ListView.builder(
-      controller: scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      itemCount: jobs.length,
-      itemBuilder: (context, index) =>
-          JobCard(job: jobs[index], applied: false, page: 1),
+    return RefreshIndicator(
+      key: refreshKey,
+      color: customBlue,
+      onRefresh: () => fetch(true),
+      child: ListView.builder(
+        controller: scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: jobs.length,
+        itemBuilder: (context, index) =>
+            JobCard(job: jobs[index], applied: false, page: page),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
+        backgroundColor: Colors.black,
         elevation: 0,
         title: RichText(
           text: TextSpan(
@@ -183,25 +223,49 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(width: 20),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          dividerColor: backgroundColor,
+          dividerHeight: 0.0,
+          labelColor: customBlue,
+          unselectedLabelColor: Colors.white,
+          indicatorColor: customBlue,
+          labelStyle: AppStyles.mondaN.copyWith(
+            fontSize: 16,
+          ),
+          tabs: const [
+            Tab(
+              text: 'Recommended',
+            ),
+            Tab(text: 'You Might Like'),
+          ],
+        ),
       ),
       body: Consumer<JobProvider>(
         builder: (context, jobProvider, _) {
           if (jobProvider.isLoading) {
             return ListView.builder(
-              itemCount: 10,
+              itemCount: 5,
               itemBuilder: (_, __) => const JobCardSkeleton(),
             );
           }
 
-          return RefreshIndicator(
-            key: _refreshIndicatorKey,
-            color: customBlue,
-            onRefresh: () => refreshRecommendedJobs(),
-            child: _buildJobList(
-              jobProvider.recommendedJobs,
-              _recommendedController,
-              onRefresh: () => refreshRecommendedJobs(),
-            ),
+          return TabBarView(
+            controller: _tabController,
+            children: [
+              _buildJobList(
+                jobProvider.recommendedJobs,
+                _recommendedController,
+                _recommendedRefreshKey,
+                1,
+              ),
+              _buildJobList(
+                jobProvider.youMightLikeJobs,
+                _mightLikeController,
+                _mightLikeRefreshKey,
+                2,
+              ),
+            ],
           );
         },
       ),

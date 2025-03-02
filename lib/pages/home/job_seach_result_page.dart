@@ -7,11 +7,11 @@ import 'package:hirewise/pages/home/widget/job_card.dart';
 import 'package:hirewise/pages/home/widget/job_card_skelaton.dart';
 
 class JobSearchResultsPage extends StatefulWidget {
-  final String? role;
+  final String? clusterName;
 
   const JobSearchResultsPage({
     super.key,
-    this.role,
+    this.clusterName,
   });
 
   @override
@@ -54,7 +54,7 @@ class _JobSearchResultsPageState extends State<JobSearchResultsPage> {
       if (isRefresh || jobProvider.jobs.isEmpty) {
         await jobProvider.searchJobs(
           context,
-          role: widget.role,
+          clusterName: widget.clusterName,
         );
       }
     } catch (e) {

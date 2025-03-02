@@ -11,6 +11,7 @@ class JobProvider with ChangeNotifier {
 
   List<Job> _searchJobs = [];
   List<Job> _recommendedJobs = [];
+  List<Job> _youMightLikeJobs = [];
   List<Job> _appliedJobs = [];
   bool _isLoading = false;
   String? _error;
@@ -19,6 +20,7 @@ class JobProvider with ChangeNotifier {
 
   List<Job> get jobs => _searchJobs;
   List<Job> get recommendedJobs => _recommendedJobs;
+  List<Job> get youMightLikeJobs => _youMightLikeJobs;
   List<Job> get appliedJobs => _appliedJobs;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -28,10 +30,10 @@ class JobProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void _showSnackBar(BuildContext context, String message, {Color? color}) {
+  void _showSnackBar(BuildContext context, String message) {
     final snackBar = SnackBar(
       content: Text(message),
-      backgroundColor: color ?? Colors.black,
+      backgroundColor: Colors.black,
     );
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
@@ -42,7 +44,7 @@ class JobProvider with ChangeNotifier {
       final errorData = json.decode(response.body);
       _error = errorData['message'] ?? 'An error occurred';
       notifyListeners();
-      _showSnackBar(context, _error!, color: Colors.black);
+      _showSnackBar(context, _error!);
       throw Exception(_error);
     }
   }
@@ -51,9 +53,10 @@ class JobProvider with ChangeNotifier {
   Future<void> applyForJob(BuildContext context, String jobId, int page) async {
     final userId = userProvider.user?.id;
     if (userId == null) {
-      _showSnackBar(context, "User ID not found. Please log in.",
-          color: Colors.black);
-      throw Exception("User ID not found. Please log in.");
+      _showSnackBar(
+        context,
+        "User ID not found. Please log in.",
+      );
     }
 
     _setLoading(true);
@@ -64,29 +67,24 @@ class JobProvider with ChangeNotifier {
         body: json.encode({'jobId': jobId, 'userId': userId}),
       );
 
-      _handleError(context, response);
+      Job? appliedJob1 = _removeJobFromList(_recommendedJobs, jobId);
+      Job? appliedJob2 = _removeJobFromList(_youMightLikeJobs, jobId);
+      Job? appliedJob3 = _removeJobFromList(_searchJobs, jobId);
 
-      Job? appliedJob;
-
-      switch (page) {
-        case 1:
-          appliedJob = _removeJobFromList(_recommendedJobs, jobId);
-          break;
-
-        case 2:
-          appliedJob = _removeJobFromList(_searchJobs, jobId);
-          break;
-        default:
-          throw Exception("Invalid page number: $page");
-      }
-
-      if (appliedJob != null) {
-        _appliedJobs.add(appliedJob);
-        _showSnackBar(context, "Successfully applied for the job!",
-            color: Colors.green);
+      if (appliedJob1 != null) {
+        _appliedJobs.add(appliedJob1);
+        _showSnackBar(context, "Successfully applied for the job!");
+      } else if (appliedJob2 != null) {
+        _appliedJobs.add(appliedJob2);
+        _showSnackBar(context, "Successfully applied for the job!");
+      } else if (appliedJob3 != null) {
+        _appliedJobs.add(appliedJob3);
+        _showSnackBar(context, "Successfully applied for the job!");
       } else {
-        _showSnackBar(context, "Job not found in the list.",
-            color: Colors.orange);
+        _showSnackBar(
+          context,
+          "Job not found in the list.",
+        );
       }
     } catch (e) {
       _error = e.toString();
@@ -109,8 +107,10 @@ class JobProvider with ChangeNotifier {
     final userId = userProvider.user?.id;
     print(userId);
     if (userId == null) {
-      _showSnackBar(context, "User ID not found. Please log in.",
-          color: Colors.black);
+      _showSnackBar(
+        context,
+        "User ID not found. Please log in.",
+      );
       throw Exception("User ID not found. Please log in.");
     }
 
@@ -122,26 +122,49 @@ class JobProvider with ChangeNotifier {
         body: json.encode({'userId': userId}),
       );
 
+      // Handle potential errors in response
       _handleError(context, response);
 
+      // Decode the response
       final responseData = json.decode(response.body)['data'];
-      _recommendedJobs =
-          (responseData as List).map((job) => Job.fromJson(job)).toList();
-      print(_recommendedJobs.length);
+
+      // Handle the recommended jobs
+      if (responseData != null) {
+        // Parse both recommended jobs and might like jobs
+        final recommendedJobsData = responseData['recommendedJobs'];
+        final youMightLikeJobsData = responseData['youMightLikeJobs'];
+
+        // Map the jobs to Job objects
+        _recommendedJobs = (recommendedJobsData as List)
+            .map((job) => Job.fromJson(job))
+            .toList();
+        _youMightLikeJobs = (youMightLikeJobsData as List)
+            .map((job) => Job.fromJson(job))
+            .toList();
+
+        if (_recommendedJobs.isEmpty) {}
+        print('You might like jobs: ${_youMightLikeJobs.length}');
+      } else {
+        _showSnackBar(context, "No data found.");
+      }
     } catch (e) {
       _error = e.toString();
+      print("Error: $_error");
     } finally {
       _setLoading(false);
     }
   }
 
   // Fetch applied jobs list
-  Future<void> getAppliedJobs(BuildContext context,
-      {String? sortBy, String? order}) async {
+  Future<void> getAppliedJobs(
+    BuildContext context,
+  ) async {
     final userId = userProvider.user?.id;
     if (userId == null) {
-      _showSnackBar(context, "User ID not found. Please log in.",
-          color: Colors.black);
+      _showSnackBar(
+        context,
+        "User ID not found. Please log in.",
+      );
       throw Exception("User ID not found. Please log in.");
     }
 
@@ -152,8 +175,6 @@ class JobProvider with ChangeNotifier {
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'userId': userId,
-          if (sortBy != null) 'sortBy': sortBy,
-          if (order != null) 'order': order,
         }),
       );
 
@@ -172,15 +193,17 @@ class JobProvider with ChangeNotifier {
   // Search for jobs based on filters, using a POST request and sending filters in the body
   Future<void> searchJobs(
     BuildContext context, {
-    String? role,
+    String? clusterName,
   }) async {
     _setLoading(true);
     try {
+      final userId = userProvider.user?.id;
       final response = await http.post(
         Uri.parse('$baseUrl/search'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'role': role,
+          "userId": userId,
+          'clusterName': clusterName,
         }),
       );
 

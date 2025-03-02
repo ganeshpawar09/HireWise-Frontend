@@ -5,21 +5,21 @@ import 'package:hirewise/const/font.dart';
 import 'package:hirewise/models/aptitude_test_result_model.dart';
 import 'package:hirewise/pages/prepzone/test/aptitude/aptitude_result_page.dart';
 
-class AssessmentDetailPage extends StatefulWidget {
+class AptitudeDetailPage extends StatefulWidget {
   final String type;
   final List<AptitudeTestResult> assessments;
 
-  const AssessmentDetailPage({
+  const AptitudeDetailPage({
     required this.type,
     required this.assessments,
     super.key,
   });
 
   @override
-  State<AssessmentDetailPage> createState() => _AssessmentDetailPageState();
+  State<AptitudeDetailPage> createState() => _AptitudeDetailPageState();
 }
 
-class _AssessmentDetailPageState extends State<AssessmentDetailPage> {
+class _AptitudeDetailPageState extends State<AptitudeDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -288,7 +288,7 @@ class _AssessmentDetailPageState extends State<AssessmentDetailPage> {
     for (int i = 0; i < widget.assessments.length; i++) {
       spots.add(FlSpot(
         i.toDouble(),
-        widget.assessments[i].analytics.overallScore,
+        widget.assessments[i].overallScore,
       ));
     }
     return spots;
@@ -338,7 +338,7 @@ class _AssessmentDetailPageState extends State<AssessmentDetailPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => TestResultsPage(result: assessment),
+            builder: (context) => AptitudeResultPage(result: assessment),
           ),
         );
       },
@@ -356,7 +356,7 @@ class _AssessmentDetailPageState extends State<AssessmentDetailPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _getFormattedDate(assessment.date),
+                    _getFormattedDate(assessment.testDate),
                     style: AppStyles.mondaN.copyWith(fontSize: 16),
                   ),
                   const SizedBox(height: 4),
@@ -374,23 +374,16 @@ class _AssessmentDetailPageState extends State<AssessmentDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${assessment.analytics.overallScore.toStringAsFixed(1)}%',
+                  '${assessment.overallScore.toStringAsFixed(1)}%',
                   style: AppStyles.mondaB.copyWith(
                     fontSize: 20,
-                    color: _getScoreColor(assessment.analytics.overallScore),
-                  ),
-                ),
-                Text(
-                  '${assessment.analytics.correctAnswers}/${assessment.analytics.totalQuestions}',
-                  style: AppStyles.mondaN.copyWith(
-                    color: Colors.grey,
-                    fontSize: 14,
+                    color: _getScoreColor(assessment.overallScore),
                   ),
                 ),
               ],
             ),
             const SizedBox(width: 8),
-            Icon(
+            const Icon(
               Icons.arrow_forward_ios,
               color: Colors.grey,
               size: 16,
@@ -411,7 +404,7 @@ class _AssessmentDetailPageState extends State<AssessmentDetailPage> {
     if (widget.assessments.isEmpty) return 0;
     double total = widget.assessments.fold(
       0,
-      (sum, assessment) => sum + assessment.analytics.overallScore,
+      (sum, assessment) => sum + assessment.overallScore,
     );
     return total / widget.assessments.length;
   }

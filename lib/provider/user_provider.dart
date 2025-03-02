@@ -14,17 +14,17 @@ class UserProvider extends ChangeNotifier {
   String? _accessToken;
   String? _error;
   FeedbackModel? _userFeedback;
-  List<String> _questions = ["Introduce yourself"];
+  List<String> _questions = [];
   List<String> get questions => _questions;
 
   User? get user => _user;
   String? get accessToken => _accessToken;
   bool get isAuthenticated => _user != null && _accessToken != null;
   FeedbackModel? get userFeedback => _userFeedback;
-  void _showSnackBar(BuildContext context, String message, {Color? color}) {
+  void _showSnackBar(BuildContext context, String message) {
     final snackBar = SnackBar(
       content: Text(message),
-      backgroundColor: color ?? Colors.black,
+      backgroundColor: Colors.black,
     );
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
@@ -35,7 +35,7 @@ class UserProvider extends ChangeNotifier {
       final errorData = json.decode(response.body);
       _error = errorData['message'] ?? 'An error occurred';
       notifyListeners();
-      _showSnackBar(context, _error!, color: Colors.black);
+      _showSnackBar(context, _error!);
       throw Exception(_error);
     }
   }
@@ -51,6 +51,11 @@ class UserProvider extends ChangeNotifier {
       _accessToken = token;
       notifyListeners();
     }
+  }
+
+  void updateUser(User updatedUser) {
+    _user = updatedUser;
+    notifyListeners(); // Notify UI of the change
   }
 
   Future<void> sendOTP(BuildContext context, String email) async {
@@ -80,6 +85,7 @@ class UserProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
+        print(responseData);
         _user = User.fromJson(responseData['data']['user']);
         _accessToken = responseData['data']['accessToken'];
         await saveToLocal();
@@ -94,13 +100,6 @@ class UserProvider extends ChangeNotifier {
   Future<void> updateUserProfile(
       BuildContext context, Map<String, dynamic> updates) async {
     try {
-      if (updates.containsKey('aptitudeAssessments')) {
-        updates['aptitudeAssessments'] = updates['aptitudeAssessments']
-            .map((assessment) => assessment.toJson())
-            .toList();
-      }
-      print('Updates to be sent: $updates'); // Detailed logging
-
       if (_user == null || _accessToken == null) {
         throw Exception('User not authenticated');
       }
@@ -114,19 +113,19 @@ class UserProvider extends ChangeNotifier {
         },
       );
 
-      _handleError(context, response);
+      // _handleError(context, response);
+      print(response.body);
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
-        print(
-            'Updated user data: ${responseData['data']['user']['aptitudeAssessments']}');
+        print(responseData['data']['user']['aptitudeTestResult']);
+        // print(responseData['data']['user']['mockInterviewResult']);
+        // _user = User.fromJson(responseData['data']['user']);
 
-        _user = User.fromJson(responseData['data']['user']);
-        await saveToLocal();
+        // await saveToLocal();
         notifyListeners();
       }
     } catch (e) {
-      print('Detailed error: $e'); // Log the full error
       _error = e.toString();
       _showSnackBar(context, "Profile update failed: ${e.toString()}");
     }
@@ -191,9 +190,9 @@ class UserProvider extends ChangeNotifier {
       );
 
       _handleError(context, response);
+
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
-        print(responseData['data']['user']);
         _user = User.fromJson(responseData['data']['user']);
         saveToLocal();
         notifyListeners();
@@ -265,7 +264,6 @@ class UserProvider extends ChangeNotifier {
 
       // Handle any non-200 HTTP status codes.
       _handleError(context, response);
-      print(response.body);
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         // Extract interview questions from the response.
@@ -387,6 +385,9 @@ class UserProvider extends ChangeNotifier {
         final result = MockInterviewResult.fromJson(
             responseData['data']['mockInterviewResult']);
         _showSnackBar(context, "We got result.");
+        user!.mockInterviewResult.add(result);
+
+        await saveToLocal();
         return result;
       } else {
         final responseData = json.decode(response.body);

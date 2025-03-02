@@ -18,6 +18,7 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
   Map<String, List<String>> selectedSubtopicsMap = {};
   int numberOfQuestions = 10;
   int timePerQuestion = 60;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -55,12 +56,22 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
   }
 
   Future<void> fetchTopics() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     final topicProvider = Provider.of<TopicProvider>(context, listen: false);
 
     try {
       await topicProvider.fetchTopicsStructure(context);
     } catch (e) {
       _showError("Something went wrong while fetching applied jobs");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -81,7 +92,11 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
       );
       return;
     }
-    print(selectedTopic);
+
+    setState(() {
+      _isLoading = true;
+    });
+
     final topicProvider = Provider.of<TopicProvider>(context, listen: false);
     try {
       await topicProvider.fetchQuestionsBySubTopic(
@@ -94,15 +109,13 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
 
       if (topicProvider.questions != null &&
           topicProvider.questions!.isNotEmpty) {
-        Navigator.push(
+        Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) => AptitudeTestPage(
                   questions: topicProvider.questions!,
                   timePerQuestion: timePerQuestion),
             ));
-        print(
-            'Questions fetched successfully: ${topicProvider.questions!.length}');
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -111,11 +124,19 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
           backgroundColor: Colors.black,
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final topicProvider = Provider.of<TopicProvider>(context);
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -137,61 +158,53 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Consumer<TopicProvider>(
-        builder: (context, topicProvider, child) {
-          if (topicProvider.isLoading) {
-            return const Center(
+      body: _isLoading
+          ? const Center(
               child: CircularProgressIndicator(
                 color: Colors.indigo,
               ),
-            );
-          }
-
-          if (topicProvider.error != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Error loading topics',
-                    style: AppStyles.mondaB.copyWith(
-                      color: Colors.red,
-                      fontSize: 18,
-                    ),
+            )
+          : topicProvider.topics == null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Error loading topics',
+                        style: AppStyles.mondaB.copyWith(
+                          color: Colors.red,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadTopics,
+                        child: const Text('Retry'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadTopics,
-                    child: const Text('Retry'),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TestStyles.buildSectionHeader(
+                        'Select Topics & Subtopics',
+                        Icons.category,
+                        customBlue,
+                      ),
+                      _buildTopicsSection(topicProvider),
+                      TestStyles.buildSectionHeader(
+                        'Test Configuration',
+                        Icons.settings,
+                        customBlue,
+                      ),
+                      _buildConfigurationCard(),
+                      _buildSubmitButton(),
+                    ],
                   ),
-                ],
-              ),
-            );
-          }
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TestStyles.buildSectionHeader(
-                  'Select Topics & Subtopics',
-                  Icons.category,
-                  customBlue,
                 ),
-                _buildTopicsSection(topicProvider),
-                TestStyles.buildSectionHeader(
-                  'Test Configuration',
-                  Icons.settings,
-                  customBlue,
-                ),
-                _buildConfigurationCard(),
-                _buildSubmitButton(),
-              ],
-            ),
-          );
-        },
-      ),
     );
   }
 
@@ -209,207 +222,6 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
       },
     );
   }
-
-  // Widget _buildExpandableTopicCard(String topic, List<String> subtopics) {
-  //   final isSelected = selectedTopic == topic;
-  //   final selectedSubtopics = getSelectedSubtopics(topic);
-
-  //   return Container(
-  //     margin: const EdgeInsets.symmetric(vertical: 8),
-  //     child: Column(
-  //       children: [
-  //         Material(
-  //           color: Colors.transparent,
-  //           child: InkWell(
-  //             onTap: () => setState(() {
-  //               selectedTopic = isSelected ? null : topic;
-  //             }),
-  //             borderRadius: BorderRadius.circular(15),
-  //             child: Container(
-  //               decoration: BoxDecoration(
-  //                 gradient: LinearGradient(
-  //                   colors: isSelected
-  //                       ? [
-  //                           Colors.indigo.withOpacity(0.3),
-  //                           Colors.indigo.withOpacity(0.1)
-  //                         ]
-  //                       : [
-  //                           Colors.grey.withOpacity(0.1),
-  //                           Colors.grey.withOpacity(0.05)
-  //                         ],
-  //                 ),
-  //                 borderRadius: BorderRadius.circular(15),
-  //                 border: Border.all(
-  //                   color: isSelected
-  //                       ? Colors.indigo
-  //                       : selectedSubtopics.isNotEmpty
-  //                           ? Colors.indigo.withOpacity(0.3)
-  //                           : Colors.grey.withOpacity(0.3),
-  //                   width: isSelected ? 2 : 1,
-  //                 ),
-  //               ),
-  //               padding: const EdgeInsets.all(16),
-  //               child: Row(
-  //                 children: [
-  //                   Container(
-  //                     padding: const EdgeInsets.all(12),
-  //                     decoration: BoxDecoration(
-  //                       color: isSelected
-  //                           ? Colors.indigo.withOpacity(0.2)
-  //                           : Colors.grey.withOpacity(0.1),
-  //                       borderRadius: BorderRadius.circular(12),
-  //                     ),
-  //                     child: Icon(
-  //                       _getTopicIcon(topic),
-  //                       color: isSelected ? Colors.indigo : Colors.grey,
-  //                       size: 24,
-  //                     ),
-  //                   ),
-  //                   const SizedBox(width: 16),
-  //                   Expanded(
-  //                     child: Column(
-  //                       crossAxisAlignment: CrossAxisAlignment.start,
-  //                       children: [
-  //                         Text(
-  //                           topic,
-  //                           style: AppStyles.mondaB.copyWith(
-  //                             fontSize: 18,
-  //                             color: isSelected ? Colors.indigo : Colors.white,
-  //                           ),
-  //                         ),
-  //                         if (selectedSubtopics.isNotEmpty) ...[
-  //                           const SizedBox(height: 4),
-  //                           Text(
-  //                             '${selectedSubtopics.length} subtopics selected',
-  //                             style: AppStyles.mondaB.copyWith(
-  //                               fontSize: 14,
-  //                               color: Colors.indigo.withOpacity(0.7),
-  //                             ),
-  //                           ),
-  //                         ],
-  //                       ],
-  //                     ),
-  //                   ),
-  //                   Icon(
-  //                     isSelected
-  //                         ? Icons.keyboard_arrow_up
-  //                         : Icons.keyboard_arrow_down,
-  //                     color: isSelected ? Colors.indigo : Colors.grey,
-  //                     size: 24,
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //         if (isSelected) ...[
-  //           AnimatedContainer(
-  //             duration: const Duration(milliseconds: 300),
-  //             margin: const EdgeInsets.only(
-  //               left: 16,
-  //               right: 16,
-  //               top: 8,
-  //               bottom: 8,
-  //             ),
-  //             decoration: BoxDecoration(
-  //               color: Colors.indigo.withOpacity(0.05),
-  //               borderRadius: BorderRadius.circular(12),
-  //               border: Border.all(
-  //                 color: Colors.indigo.withOpacity(0.1),
-  //               ),
-  //             ),
-  //             child: Padding(
-  //               padding: const EdgeInsets.all(16),
-  //               child: Column(
-  //                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                 children: [
-  //                   Text(
-  //                     'Select Subtopics',
-  //                     style: AppStyles.mondaB.copyWith(
-  //                       fontSize: 16,
-  //                       color: Colors.indigo,
-  //                     ),
-  //                   ),
-  //                   const SizedBox(height: 12),
-  //                   Wrap(
-  //                     spacing: 8,
-  //                     runSpacing: 12,
-  //                     children: subtopics.map((subtopic) {
-  //                       final isSubtopicSelected =
-  //                           selectedSubtopics.contains(subtopic);
-  //                       return InkWell(
-  //                         onTap: () {
-  //                           setState(() {
-  //                             selectedSubtopicsMap[topic] ??= [];
-  //                             if (isSubtopicSelected) {
-  //                               selectedSubtopicsMap[topic]!.remove(subtopic);
-  //                             } else {
-  //                               selectedSubtopicsMap[topic]!.add(subtopic);
-  //                             }
-  //                           });
-  //                         },
-  //                         borderRadius: BorderRadius.circular(20),
-  //                         child: Container(
-  //                           padding: const EdgeInsets.symmetric(
-  //                             horizontal: 16,
-  //                             vertical: 8,
-  //                           ),
-  //                           decoration: BoxDecoration(
-  //                             gradient: LinearGradient(
-  //                               colors: isSubtopicSelected
-  //                                   ? [
-  //                                       Colors.purple.withOpacity(0.3),
-  //                                       Colors.purple.withOpacity(0.1),
-  //                                     ]
-  //                                   : [
-  //                                       Colors.grey.withOpacity(0.1),
-  //                                       Colors.grey.withOpacity(0.05),
-  //                                     ],
-  //                             ),
-  //                             borderRadius: BorderRadius.circular(20),
-  //                             border: Border.all(
-  //                               color: isSubtopicSelected
-  //                                   ? Colors.purple
-  //                                   : Colors.grey.withOpacity(0.3),
-  //                             ),
-  //                           ),
-  //                           child: Row(
-  //                             mainAxisSize: MainAxisSize.min,
-  //                             children: [
-  //                               Icon(
-  //                                 isSubtopicSelected
-  //                                     ? Icons.check_circle
-  //                                     : Icons.circle_outlined,
-  //                                 size: 18,
-  //                                 color: isSubtopicSelected
-  //                                     ? Colors.purple
-  //                                     : Colors.grey,
-  //                               ),
-  //                               const SizedBox(width: 8),
-  //                               Text(
-  //                                 subtopic,
-  //                                 style: AppStyles.mondaB.copyWith(
-  //                                   fontSize: 14,
-  //                                   color: isSubtopicSelected
-  //                                       ? Colors.purple
-  //                                       : Colors.grey,
-  //                                 ),
-  //                               ),
-  //                             ],
-  //                           ),
-  //                         ),
-  //                       );
-  //                     }).toList(),
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //           ),
-  //         ],
-  //       ],
-  //     ),
-  //   );
-  // }
 
   Widget _buildExpandableTopicCard(String topic, List<String> subtopics) {
     final isSelected = selectedTopic == topic;
@@ -762,27 +574,28 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
       width: double.infinity,
       margin: const EdgeInsets.symmetric(vertical: 16),
       child: ElevatedButton(
-          onPressed: canSubmit ? _submitSelection : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: customBlue,
-            disabledBackgroundColor: Colors.grey.withOpacity(0.1),
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+        onPressed: canSubmit && !_isLoading ? _submitSelection : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: customBlue,
+          disabledBackgroundColor: Colors.grey.withOpacity(0.1),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: (Provider.of<TopicProvider>(context).isLoading)
-              ? const CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                )
-              : Text(
-                  'Start Test',
-                  style: AppStyles.mondaB.copyWith(
-                    fontSize: 18,
-                    color: canSubmit ? Colors.white : Colors.grey,
-                  ),
-                )),
+        ),
+        child: _isLoading
+            ? const CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              )
+            : Text(
+                'Start Test',
+                style: AppStyles.mondaB.copyWith(
+                  fontSize: 18,
+                  color: canSubmit ? Colors.white : Colors.grey,
+                ),
+              ),
+      ),
     );
   }
 }

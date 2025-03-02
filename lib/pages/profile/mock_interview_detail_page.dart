@@ -1,93 +1,28 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/const/font.dart';
 import 'package:hirewise/models/mock_interview_result_model.dart';
-import 'package:hirewise/provider/user_provider.dart';
-import 'package:provider/provider.dart';
 
-class MockInterviewProcessPage extends StatefulWidget {
-  final Map<String, String?> questionVideoMap;
+class MockInterviewDetailPage extends StatefulWidget {
+  final List<MockInterviewResult> results;
 
-  const MockInterviewProcessPage({
+  const MockInterviewDetailPage({
+    required this.results,
     super.key,
-    required this.questionVideoMap,
   });
 
   @override
-  State<MockInterviewProcessPage> createState() =>
-      _MockInterviewProcessPageState();
+  State<MockInterviewDetailPage> createState() =>
+      _MockInterviewDetailPageState();
 }
 
-class _MockInterviewProcessPageState extends State<MockInterviewProcessPage> {
-  bool _isUploading = false;
-  Map<String, MockInterviewResult> results = {};
+class _MockInterviewDetailPageState extends State<MockInterviewDetailPage> {
   Map<String, bool> expanded = {};
-  bool _isProcessing = false;
 
   void _toggleResultDetails(String question) {
     setState(() {
       expanded[question] = !(expanded[question] ?? false);
     });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  Future<void> processVideo(String question, String videoUrl) async {
-    try {
-      setState(() => _isProcessing = true);
-      print("Processing video...");
-      
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-
-      MockInterviewResult? result = await userProvider.processVideo(
-          context: context, question: question, videoUrl: videoUrl);
-
-      if (result != null) {
-        setState(() {
-          results[question] = result;
-        });
-      }
-    } catch (e) {
-      print(e);
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
-    }
-  }
-
-  Future<void> _uploadVideo(String question, String videoPath) async {
-    try {
-      setState(() => _isUploading = true);
-
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-
-      if (File(videoPath).existsSync()) {
-        final file = File(videoPath);
-
-        final videoUrl = await userProvider.uploadVideo(
-          context: context,
-          file: file,
-        );
-
-        if (videoUrl != null) {
-          setState(() {
-            print(videoUrl);
-            widget.questionVideoMap[question] = videoUrl;
-          });
-        }
-      }
-    } catch (e) {
-      print(e);
-    } finally {
-      if (mounted) {
-        setState(() => _isUploading = false);
-      }
-    }
   }
 
   @override
@@ -98,11 +33,11 @@ class _MockInterviewProcessPageState extends State<MockInterviewProcessPage> {
         backgroundColor: darkBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "Process Video",
+          "Interview Results",
           style: AppStyles.mondaN.copyWith(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -110,104 +45,37 @@ class _MockInterviewProcessPageState extends State<MockInterviewProcessPage> {
           ),
         ),
       ),
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  darkBackground,
-                  darkBackground.withOpacity(0.95),
-                ],
-              ),
-            ),
-            child: Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: widget.questionVideoMap.length,
-                    itemBuilder: (context, index) {
-                      final question =
-                          widget.questionVideoMap.keys.elementAt(index);
-                      final videoPath = widget.questionVideoMap[question];
-                      final result = results[question];
-                      final isResultExpanded = expanded[question] ?? false;
-
-                      return _buildQuestionCard(
-                        index: index,
-                        question: question,
-                        videoPath: videoPath,
-                        result: result,
-                        isResultExpanded: isResultExpanded,
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              darkBackground,
+              darkBackground.withOpacity(0.95),
+            ],
           ),
-          if (_isUploading || _isProcessing) _buildLoadingOverlay(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoadingOverlay() {
-    return Container(
-      color: darkBackground.withOpacity(0.8),
-      child: Center(
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: cardDark,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 10,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 60,
-                    height: 60,
-                    child: CircularProgressIndicator(
-                      color: _isUploading ? accentMint : accentViolet,
-                      strokeWidth: 3,
+            Expanded(
+              child: widget.results.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: widget.results.length,
+                      itemBuilder: (context, index) {
+                        final result = widget.results[index];
+                        final question = result.question;
+                        final isResultExpanded = expanded[question] ?? false;
+
+                        return _buildResultCard(
+                          index: index,
+                          result: result,
+                          isResultExpanded: isResultExpanded,
+                        );
+                      },
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    _isUploading
-                        ? 'Uploading your video...'
-                        : 'Analyzing your response...',
-                    style: AppStyles.mondaB.copyWith(
-                      color: Colors.white,
-                      fontSize: 18,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _isUploading
-                        ? 'This may take a moment'
-                        : 'Getting your interview feedback',
-                    style: AppStyles.mondaN.copyWith(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
             ),
           ],
         ),
@@ -215,21 +83,17 @@ class _MockInterviewProcessPageState extends State<MockInterviewProcessPage> {
     );
   }
 
-  Widget _buildQuestionCard({
+  Widget _buildResultCard({
     required int index,
-    required String question,
-    required String? videoPath,
-    MockInterviewResult? result,
+    required MockInterviewResult result,
     required bool isResultExpanded,
   }) {
-    final bool isAlreadyUploaded =
-        videoPath != null && videoPath.contains('cloudinary.com');
-    final bool hasResults = result != null;
+    final question = result.question;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
@@ -251,13 +115,14 @@ class _MockInterviewProcessPageState extends State<MockInterviewProcessPage> {
         child: ExpansionTile(
           collapsedBackgroundColor: Colors.transparent,
           backgroundColor: Colors.transparent,
+          initiallyExpanded: false,
           title: Row(
             children: [
               Container(
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
+                  gradient: const LinearGradient(
                     colors: [accentBlue, accentTeal],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -319,152 +184,81 @@ class _MockInterviewProcessPageState extends State<MockInterviewProcessPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (videoPath != null) ...[
-                    _buildInfoRow(
-                      icon: Icons.video_file,
-                      label: 'Video File',
-                      value: videoPath,
-                      color: accentBlue,
-                      iconColor: accentBlue,
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: accentBlue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: accentBlue.withOpacity(0.2),
+                        width: 1,
+                      ),
                     ),
-                    const SizedBox(height: 20),
-                    if (!isAlreadyUploaded)
-                      _buildActionButton(
-                        onPressed: () => _uploadVideo(question, videoPath),
-                        icon: Icons.cloud_upload,
-                        label: 'Upload Video',
-                        gradient: [accentGreen, accentTurquoise],
-                        shadowColor: accentGreen,
+                    child: Text(
+                      "Question: ${result.question}",
+                      style: AppStyles.mondaN.copyWith(
+                        fontSize: 15,
+                        color: Colors.white.withOpacity(0.9),
+                        height: 1.5,
                       ),
-                    if (isAlreadyUploaded && !hasResults)
-                      _buildActionButton(
-                        onPressed: () => processVideo(question, videoPath),
-                        icon: Icons.psychology,
-                        label: 'Analyze Response',
-                        gradient: [accentBlue, accentIndigo],
-                        shadowColor: accentBlue,
-                      ),
-                    if (hasResults) ...[
-                      const SizedBox(height: 24),
-                      _buildResultsSummary(result),
-                      const SizedBox(height: 16),
-                      GestureDetector(
-                        onTap: () => _toggleResultDetails(question),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                accentViolet.withOpacity(0.2),
-                                accentPurple.withOpacity(0.2)
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: accentViolet.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isResultExpanded
-                                    ? Icons.keyboard_arrow_up
-                                    : Icons.keyboard_arrow_down,
-                                color: accentViolet,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                isResultExpanded
-                                    ? 'Hide Details'
-                                    : 'View Detailed Analysis',
-                                style: AppStyles.mondaB.copyWith(
-                                  fontSize: 14,
-                                  color: accentViolet,
-                                ),
-                              ),
-                            ],
-                          ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildResultsSummary(result),
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: () => _toggleResultDetails(question),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            accentViolet.withOpacity(0.2),
+                            accentPurple.withOpacity(0.2)
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: accentViolet.withOpacity(0.3),
+                          width: 1,
                         ),
                       ),
-                      if (isResultExpanded) ...[
-                        const SizedBox(height: 24),
-                        _buildDetailedResults(result),
-                      ],
-                    ],
-                  ] else
-                    _buildInfoRow(
-                      icon: Icons.warning,
-                      label: 'Status',
-                      value: 'No video recorded',
-                      color: accentOrange,
-                      iconColor: accentOrange,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isResultExpanded
+                                ? Icons.keyboard_arrow_up
+                                : Icons.keyboard_arrow_down,
+                            color: accentViolet,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            isResultExpanded
+                                ? 'Hide Details'
+                                : 'View Detailed Analysis',
+                            style: AppStyles.mondaB.copyWith(
+                              fontSize: 14,
+                              color: accentViolet,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                  ),
+                  if (isResultExpanded) ...[
+                    const SizedBox(height: 24),
+                    _buildDetailedResults(result),
+                  ],
                 ],
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required VoidCallback onPressed,
-    required IconData icon,
-    required String label,
-    required List<Color> gradient,
-    required Color shadowColor,
-  }) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: shadowColor.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-        child: Ink(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: gradient,
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 20, color: Colors.white),
-                const SizedBox(width: 10),
-                Text(
-                  label,
-                  style: AppStyles.mondaB
-                      .copyWith(fontSize: 16, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
@@ -510,7 +304,7 @@ class _MockInterviewProcessPageState extends State<MockInterviewProcessPage> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Interview Analysis',
+                'Response Analysis',
                 style: AppStyles.mondaB.copyWith(
                   fontSize: 18,
                   color: Colors.white,
@@ -566,7 +360,7 @@ class _MockInterviewProcessPageState extends State<MockInterviewProcessPage> {
             ),
             const Spacer(),
             Text(
-              '$value%',
+              '${value.toStringAsFixed(1)}%',
               style: AppStyles.mondaB.copyWith(
                 fontSize: 16,
                 color: Colors.white,
@@ -610,9 +404,9 @@ class _MockInterviewProcessPageState extends State<MockInterviewProcessPage> {
     );
   }
 
-  Widget _buildDetailedResults(dynamic result) {
-    Transcription transcription = result.transcription ?? {};
-    Grammar grammar = result.grammar ?? {};
+  Widget _buildDetailedResults(MockInterviewResult result) {
+    Transcription transcription = result.transcription;
+    Grammar grammar = result.grammar;
     final fillerWords = transcription.fillerWords;
 
     return Container(
@@ -906,56 +700,66 @@ class _MockInterviewProcessPageState extends State<MockInterviewProcessPage> {
     }).toList();
   }
 
-  Widget _buildInfoRow({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-    required Color iconColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: surfaceDark.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 120,
+            height: 120,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: cardDark.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: Icon(icon, size: 18, color: iconColor),
+            child: Icon(
+              Icons.videocam_off,
+              size: 60,
+              color: accentViolet.withOpacity(0.7),
+            ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: AppStyles.mondaN.copyWith(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: AppStyles.mondaB.copyWith(
-                    fontSize: 14,
-                    color: color,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+          const SizedBox(height: 24),
+          Text(
+            'No Results Yet',
+            style: AppStyles.mondaB.copyWith(
+              fontSize: 20,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Complete your mock interview to see results',
+            style: AppStyles.mondaN.copyWith(
+              fontSize: 16,
+              color: Colors.white.withOpacity(0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.white,
+              backgroundColor: Colors.transparent,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 0,
+            ).copyWith(
+              backgroundColor: MaterialStateProperty.resolveWith((states) {
+                return accentViolet.withOpacity(0.2);
+              }),
+              side: MaterialStateProperty.all(
+                BorderSide(color: accentViolet.withOpacity(0.3), width: 1),
+              ),
+            ),
+            child: Text(
+              'Go Back',
+              style: AppStyles.mondaB.copyWith(
+                fontSize: 16,
+                color: accentViolet,
+              ),
             ),
           ),
         ],
