@@ -25,7 +25,7 @@ class _JobSearchPageState extends State<JobSearchPage> {
 
   List<String> filteredRoles = [];
   final List<String> clusterName = [
-    "Web Developer",
+    "Frontend Developer",
     "Mobile Developer",
     "Backend Developer",
     "AI/ML Developer"

@@ -61,6 +61,7 @@ class _HomePageState extends State<HomePage>
   }
 
   Future<void> fetch(bool isRefresh) async {
+    print("fetch");
     if (mounted) {
       final jobProvider = Provider.of<JobProvider>(context, listen: false);
 

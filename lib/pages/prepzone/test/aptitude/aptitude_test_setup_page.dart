@@ -5,6 +5,7 @@ import 'package:hirewise/pages/prepzone/test/aptitude/aptitude_test_page.dart';
 import 'package:hirewise/pages/prepzone/test/widget/test_style.dart';
 import 'package:hirewise/provider/topic_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart'; // Make sure to add this package
 
 class AptitudeSetUpPage extends StatefulWidget {
   const AptitudeSetUpPage({super.key});
@@ -18,7 +19,7 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
   Map<String, List<String>> selectedSubtopicsMap = {};
   int numberOfQuestions = 10;
   int timePerQuestion = 60;
-  bool _isLoading = false;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -56,27 +57,12 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
   }
 
   Future<void> fetchTopics() async {
-    setState(() {
-      _isLoading = true;
-    });
-
     final topicProvider = Provider.of<TopicProvider>(context, listen: false);
-
     try {
       await topicProvider.fetchTopicsStructure(context);
     } catch (e) {
-      _showError("Something went wrong while fetching applied jobs");
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      _showError("Something went wrong while fetching topics");
     }
-  }
-
-  Future<void> _loadTopics() async {
-    await fetchTopics();
   }
 
   List<String> getSelectedSubtopics(String topic) =>
@@ -94,7 +80,7 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
     }
 
     setState(() {
-      _isLoading = true;
+      _isSubmitting = true;
     });
 
     final topicProvider = Provider.of<TopicProvider>(context, listen: false);
@@ -127,7 +113,7 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
     } finally {
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isSubmitting = false;
         });
       }
     }
@@ -135,8 +121,6 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
 
   @override
   Widget build(BuildContext context) {
-    final topicProvider = Provider.of<TopicProvider>(context);
-
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -158,53 +142,163 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: Colors.indigo,
+      body: Consumer<TopicProvider>(
+        builder: (context, topicProvider, child) {
+          if (topicProvider.isLoading) {
+            return _buildSkeletonLoader();
+          }
+
+          if (topicProvider.topics == null) {
+            return _buildEmptyState(() => fetchTopics());
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TestStyles.buildSectionHeader(
+                  'Select Topics & Subtopics',
+                  Icons.category,
+                  customBlue,
+                ),
+                _buildTopicsSection(topicProvider),
+                TestStyles.buildSectionHeader(
+                  'Test Configuration',
+                  Icons.settings,
+                  customBlue,
+                ),
+                _buildConfigurationCard(),
+                _buildSubmitButton(),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSkeletonLoader() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Shimmer.fromColors(
+        baseColor: Colors.grey.shade900,
+        highlightColor: Colors.grey.shade800,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Skeleton
+            Container(
+              height: 30,
+              width: 200,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
               ),
-            )
-          : topicProvider.topics == null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Error loading topics',
-                        style: AppStyles.mondaB.copyWith(
-                          color: Colors.red,
-                          fontSize: 18,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadTopics,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TestStyles.buildSectionHeader(
-                        'Select Topics & Subtopics',
-                        Icons.category,
-                        customBlue,
-                      ),
-                      _buildTopicsSection(topicProvider),
-                      TestStyles.buildSectionHeader(
-                        'Test Configuration',
-                        Icons.settings,
-                        customBlue,
-                      ),
-                      _buildConfigurationCard(),
-                      _buildSubmitButton(),
-                    ],
+            ),
+
+            // Topic Cards Skeleton
+            for (int i = 0; i < 5; i++)
+              Container(
+                height: 80,
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+
+            // Second Header Skeleton
+            Container(
+              height: 30,
+              width: 180,
+              margin: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+
+            // Configuration Card Skeleton
+            Container(
+              height: 200,
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+
+            // Button Skeleton
+            Container(
+              height: 55,
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(VoidCallback onRefresh) {
+    return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        SliverFillRemaining(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  "assets/icons/error.png",
+                  height: 100,
+                  width: 100,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.error_outline,
+                    size: 100,
+                    color: Colors.grey,
                   ),
                 ),
+                const SizedBox(height: 16),
+                Text(
+                  "Failed to load topics",
+                  textAlign: TextAlign.center,
+                  style: AppStyles.mondaB.copyWith(
+                    fontSize: 18,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: customBlue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    minimumSize: const Size(200, 45),
+                  ),
+                  onPressed: onRefresh,
+                  child: Text(
+                    "Refresh",
+                    style: AppStyles.mondaB.copyWith(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -574,7 +668,7 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
       width: double.infinity,
       margin: const EdgeInsets.symmetric(vertical: 16),
       child: ElevatedButton(
-        onPressed: canSubmit && !_isLoading ? _submitSelection : null,
+        onPressed: canSubmit && !_isSubmitting ? _submitSelection : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: customBlue,
           disabledBackgroundColor: Colors.grey.withOpacity(0.1),
@@ -583,7 +677,7 @@ class _AptitudeSetUpPageState extends State<AptitudeSetUpPage> {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: _isLoading
+        child: _isSubmitting
             ? const CircularProgressIndicator(
                 color: Colors.white,
                 strokeWidth: 2,

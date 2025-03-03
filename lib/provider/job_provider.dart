@@ -105,7 +105,6 @@ class JobProvider with ChangeNotifier {
   // Fetch recommended jobs based on the user's data
   Future<void> getRecommendedJobs(BuildContext context) async {
     final userId = userProvider.user?.id;
-    print(userId);
     if (userId == null) {
       _showSnackBar(
         context,
@@ -141,15 +140,11 @@ class JobProvider with ChangeNotifier {
         _youMightLikeJobs = (youMightLikeJobsData as List)
             .map((job) => Job.fromJson(job))
             .toList();
-
-        if (_recommendedJobs.isEmpty) {}
-        print('You might like jobs: ${_youMightLikeJobs.length}');
       } else {
         _showSnackBar(context, "No data found.");
       }
     } catch (e) {
       _error = e.toString();
-      print("Error: $_error");
     } finally {
       _setLoading(false);
     }

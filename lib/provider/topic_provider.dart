@@ -14,7 +14,7 @@ class TopicProvider extends ChangeNotifier {
   Map<String, List<String>>? _topics;
   List<Question>? _questions;
   String? _error;
-  final bool _isLoading = false;
+  bool _isLoading = false; // ✅ Made mutable
 
   Map<String, List<String>>? get topics => _topics;
   List<Question>? get questions => _questions;
@@ -41,6 +41,9 @@ class TopicProvider extends ChangeNotifier {
 
   // Fetch all topics structure
   Future<void> fetchTopicsStructure(BuildContext context) async {
+    _isLoading = true; // ✅ Set loading to true
+    notifyListeners();
+
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/get'),
@@ -53,17 +56,16 @@ class TopicProvider extends ChangeNotifier {
         final responseData = json.decode(response.body);
         final topicsData = responseData['data'];
 
-        // Parse topics and subtopics
         _topics = {
           for (var topic in topicsData)
             topic['topic'] as String: List<String>.from(topic['subtopics'])
         };
-
-        notifyListeners();
       }
     } catch (e) {
       _error = e.toString();
       _showSnackBar(context, "Failed to fetch topics. Please try again.");
+    } finally {
+      _isLoading = false;
       notifyListeners();
     }
   }
@@ -74,6 +76,9 @@ class TopicProvider extends ChangeNotifier {
     required List<String> subTopics,
     required int numberOfQuestions,
   }) async {
+    _isLoading = true; // ✅ Set loading to true
+    notifyListeners();
+
     try {
       _questions = [];
       final response = await http.post(
@@ -85,32 +90,29 @@ class TopicProvider extends ChangeNotifier {
         headers: {'Content-Type': 'application/json'},
       );
 
-      // _handleError(context, response);
-      print(response.body);
+      _handleError(context, response);
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         final questionsData = responseData['data']['questions'];
         _questions = List<Question>.from(
           questionsData.map((question) => Question.fromJson(question)),
         );
-        print(_questions);
-        notifyListeners();
       }
     } catch (e) {
       _error = e.toString();
-      _showSnackBar(
-        context,
-        "Failed to fetch questions. Please try again.",
-      );
+      _showSnackBar(context, "Failed to fetch questions. Please try again.");
+    } finally {
+      _isLoading = false; // ✅ Reset loading after completion
       notifyListeners();
     }
   }
 
   Future<bool> updateAptitudeResult(
       BuildContext context, AptitudeTestResult aptitudeResult) async {
-    try {
-      print("Sending request to update aptitude result...");
+    _isLoading = true; // ✅ Set loading to true
+    notifyListeners();
 
+    try {
       final response = await http.post(
         Uri.parse('$baseUrl/upload-result'),
         body: json.encode({
@@ -118,12 +120,11 @@ class TopicProvider extends ChangeNotifier {
           "overallScore": aptitudeResult.overallScore,
           "totalTimeTaken": aptitudeResult.totalTimeTaken,
           "testDate": aptitudeResult.testDate.toIso8601String(),
-          // ✅ Correctly format selectedOptions
           "selectedOptions":
               aptitudeResult.selectedOptions.entries.map((entry) {
             return {
-              "question": entry.key.id, // ✅ Send question ID
-              "option": entry.value, // ✅ Send the selected option value
+              "question": entry.key.id,
+              "option": entry.value,
             };
           }).toList(),
         }),
@@ -133,17 +134,17 @@ class TopicProvider extends ChangeNotifier {
       if (response.statusCode == 201) {
         userProvider.user!.aptitudeTestResult.add(aptitudeResult);
         await userProvider.saveToLocal();
-        notifyListeners();
         return true;
       }
-      notifyListeners();
       return false;
     } catch (e) {
       _error = e.toString();
       _showSnackBar(
           context, "Failed to update test results. Please try again.");
-      notifyListeners();
       return false;
+    } finally {
+      _isLoading = false; // ✅ Reset loading after completion
+      notifyListeners();
     }
   }
 

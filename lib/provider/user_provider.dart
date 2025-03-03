@@ -85,7 +85,6 @@ class UserProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
-        print(responseData);
         _user = User.fromJson(responseData['data']['user']);
         _accessToken = responseData['data']['accessToken'];
         await saveToLocal();
@@ -113,16 +112,13 @@ class UserProvider extends ChangeNotifier {
         },
       );
 
-      // _handleError(context, response);
-      print(response.body);
+      _handleError(context, response);
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
-        print(responseData['data']['user']['aptitudeTestResult']);
-        // print(responseData['data']['user']['mockInterviewResult']);
-        // _user = User.fromJson(responseData['data']['user']);
+        _user = User.fromJson(responseData['data']['user']);
 
-        // await saveToLocal();
+        saveToLocal();
         notifyListeners();
       }
     } catch (e) {
@@ -199,7 +195,6 @@ class UserProvider extends ChangeNotifier {
       }
     } catch (e) {
       _showSnackBar(context, "Failed to update profile from resume.");
-      print(e);
     }
   }
 
@@ -220,7 +215,6 @@ class UserProvider extends ChangeNotifier {
       );
 
       _handleError(context, response);
-      print(response.body);
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         _userFeedback =
@@ -266,9 +260,6 @@ class UserProvider extends ChangeNotifier {
       _handleError(context, response);
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
-        // Extract interview questions from the response.
-        print(
-            "Interview Questions: ${responseData['data']['interviewQuestions']}");
 
         // Explicitly cast List<dynamic> to List<String>
         final List<dynamic> rawQuestions =
@@ -279,14 +270,12 @@ class UserProvider extends ChangeNotifier {
         _showSnackBar(context, "Unexpected error: ${response.statusCode}");
       }
     } catch (e) {
-      // Handle any network or parsing errors.
-      print("Failed to fetch interview questions: $e");
+      _showSnackBar(context, "Failed to fetch interview questions: $e");
     }
   }
 
   Future<User?> getUserById(BuildContext context, String userId) async {
     try {
-      print(userId);
       final response = await http.post(
         Uri.parse('$baseUrl/get-user'),
         body: json.encode({'userId': userId}),
@@ -294,7 +283,6 @@ class UserProvider extends ChangeNotifier {
       );
 
       _handleError(context, response);
-      print(response);
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         return User.fromJson(responseData['data']['user']);
@@ -342,20 +330,18 @@ class UserProvider extends ChangeNotifier {
         final decodedResponse = json.decode(responseData);
         final videoUrl = decodedResponse['data']['videoUrl'];
         _showSnackBar(context, "File uploaded successfully.");
-        print('Upload response: $decodedResponse');
         return videoUrl;
       } else {
         final responseData = await response.stream.bytesToString();
         _showSnackBar(
           context,
-          "File upload failed: ${response.statusCode} ${responseData}",
+          "File upload failed: ${response.statusCode} $responseData",
         );
         throw Exception('File upload failed');
       }
     } catch (e) {
       _error = e.toString();
       _showSnackBar(context, "Failed to upload video. Please try again.");
-      print('Error uploading video: $e');
       return null;
     }
   }
@@ -381,7 +367,6 @@ class UserProvider extends ChangeNotifier {
       final responseData = json.decode(response.body);
       // Handle response
       if (response.statusCode == 200) {
-        print(responseData);
         final result = MockInterviewResult.fromJson(
             responseData['data']['mockInterviewResult']);
         _showSnackBar(context, "We got result.");
@@ -400,7 +385,6 @@ class UserProvider extends ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       _showSnackBar(context, "Video Processing failed. Please try again.");
-      print('Error processing video: $e');
       return null;
     }
   }
