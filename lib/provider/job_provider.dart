@@ -11,7 +11,6 @@ class JobProvider with ChangeNotifier {
 
   List<Job> _searchJobs = [];
   List<Job> _recommendedJobs = [];
-  List<Job> _youMightLikeJobs = [];
   List<Job> _appliedJobs = [];
   bool _isLoading = false;
   String? _error;
@@ -20,7 +19,6 @@ class JobProvider with ChangeNotifier {
 
   List<Job> get jobs => _searchJobs;
   List<Job> get recommendedJobs => _recommendedJobs;
-  List<Job> get youMightLikeJobs => _youMightLikeJobs;
   List<Job> get appliedJobs => _appliedJobs;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -68,14 +66,10 @@ class JobProvider with ChangeNotifier {
       );
 
       Job? appliedJob1 = _removeJobFromList(_recommendedJobs, jobId);
-      Job? appliedJob2 = _removeJobFromList(_youMightLikeJobs, jobId);
       Job? appliedJob3 = _removeJobFromList(_searchJobs, jobId);
 
       if (appliedJob1 != null) {
         _appliedJobs.add(appliedJob1);
-        _showSnackBar(context, "Successfully applied for the job!");
-      } else if (appliedJob2 != null) {
-        _appliedJobs.add(appliedJob2);
         _showSnackBar(context, "Successfully applied for the job!");
       } else if (appliedJob3 != null) {
         _appliedJobs.add(appliedJob3);
@@ -131,13 +125,9 @@ class JobProvider with ChangeNotifier {
       if (responseData != null) {
         // Parse both recommended jobs and might like jobs
         final recommendedJobsData = responseData['recommendedJobs'];
-        final youMightLikeJobsData = responseData['youMightLikeJobs'];
 
         // Map the jobs to Job objects
         _recommendedJobs = (recommendedJobsData as List)
-            .map((job) => Job.fromJson(job))
-            .toList();
-        _youMightLikeJobs = (youMightLikeJobsData as List)
             .map((job) => Job.fromJson(job))
             .toList();
       } else {

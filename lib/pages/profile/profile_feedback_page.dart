@@ -3,6 +3,7 @@ import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/const/font.dart';
 import 'package:hirewise/provider/user_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ProfileFeedbackPage extends StatefulWidget {
   final String userId;
@@ -42,6 +43,76 @@ class _ProfileFeedbackPageState extends State<ProfileFeedbackPage> {
           label: 'Retry',
           textColor: Colors.white,
           onPressed: () => _loadFeedback(context),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonLoader() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Shimmer.fromColors(
+        baseColor: Colors.grey.shade900,
+        highlightColor: Colors.grey.shade800,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Skeleton
+            Container(
+              height: 30,
+              width: 200,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+
+            // Topic Cards Skeleton
+            for (int i = 0; i < 5; i++)
+              Container(
+                height: 80,
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+
+            // Second Header Skeleton
+            Container(
+              height: 30,
+              width: 180,
+              margin: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+
+            // Configuration Card Skeleton
+            Container(
+              height: 200,
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+
+            // Button Skeleton
+            Container(
+              height: 55,
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -98,12 +169,9 @@ class _ProfileFeedbackPageState extends State<ProfileFeedbackPage> {
   Widget _buildContent(UserProvider userProvider) {
     final feedback = userProvider.userFeedback;
 
+    // Use skeleton loader when feedback is null
     if (feedback == null) {
-      return const Center(
-        child: CircularProgressIndicator(
-          color: customBlue,
-        ),
-      );
+      return _buildSkeletonLoader();
     }
 
     return SingleChildScrollView(

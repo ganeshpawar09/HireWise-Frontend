@@ -3,10 +3,8 @@ import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/const/font.dart';
 import 'package:hirewise/models/aptitude_test_result_model.dart';
 import 'package:hirewise/models/question_model.dart';
-import 'package:hirewise/models/user_model.dart';
 import 'package:hirewise/pages/prepzone/test/aptitude/aptitude_result_page.dart';
 import 'package:hirewise/provider/topic_provider.dart';
-import 'package:hirewise/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 
 class AptitudeTestPage extends StatefulWidget {

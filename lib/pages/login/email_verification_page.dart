@@ -27,7 +27,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
 
       if (!mounted) return;
 
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) =>

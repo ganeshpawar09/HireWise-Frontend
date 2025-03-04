@@ -15,7 +15,7 @@ class JobSearchPage extends StatefulWidget {
 class _JobSearchPageState extends State<JobSearchPage> {
   final _formKey = GlobalKey<FormState>();
   final _clusterNameController = TextEditingController();
-  final _isSearching = false;
+  bool _isSearching = false;
 
   @override
   void dispose() {
@@ -156,12 +156,18 @@ class _JobSearchPageState extends State<JobSearchPage> {
   Future<void> _performSearch() async {
     try {
       if (_clusterNameController.text.isNotEmpty) {
+        setState(() {
+          _isSearching = true;
+        });
         await Provider.of<JobProvider>(context, listen: false).searchJobs(
           context,
           clusterName: _clusterNameController.text,
         );
 
         if (mounted) {
+          setState(() {
+            _isSearching = false;
+          });
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -172,6 +178,9 @@ class _JobSearchPageState extends State<JobSearchPage> {
           );
         }
       } else {
+        setState(() {
+          _isSearching = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text(
@@ -189,6 +198,9 @@ class _JobSearchPageState extends State<JobSearchPage> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

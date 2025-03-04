@@ -51,24 +51,27 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
       if (user != null) {
         if (user.keySkills.length < 5) {
           // Navigate to skills selection page if skills aren't sufficient
-          Navigator.pushReplacement(
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => const SelectSkillsPage()),
+            (Route<dynamic> route) => false,
           );
         } else {
           // User has sufficient skills, proceed to main app
-          Navigator.pushReplacement(
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
                 builder: (context) => const CustomBottomNavigator()),
+            (Route<dynamic> route) => false,
           );
         }
       } else {
         // User not authenticated, go to email verification
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
               builder: (context) => const EmailVerificationPage()),
+          (Route<dynamic> route) => false,
         );
       }
     } catch (e) {
@@ -173,7 +176,6 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
                 ),
                 const SizedBox(height: 32),
 
-                // Single OTP Input Field
                 TextFormField(
                   controller: _controller,
                   style: AppStyles.mondaB.copyWith(
