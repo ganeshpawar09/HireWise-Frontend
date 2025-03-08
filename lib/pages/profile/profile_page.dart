@@ -6,6 +6,7 @@ import 'package:hirewise/const/font.dart';
 import 'package:hirewise/models/aptitude_test_result_model.dart';
 import 'package:hirewise/models/mock_interview_result_model.dart';
 import 'package:hirewise/models/user_model.dart';
+import 'package:hirewise/pages/login/email_verification_page.dart';
 import 'package:hirewise/pages/profile/aptitude_detail_page.dart';
 import 'package:hirewise/pages/profile/edit/achievement_edit_page.dart';
 import 'package:hirewise/pages/profile/edit/basic_detail_page.dart';
@@ -24,6 +25,7 @@ import 'package:hirewise/provider/user_provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -130,7 +132,36 @@ class _ProfilePageState extends State<ProfilePage> {
               _buildSectionCard('Personal details', _buildPersonalDetails()),
               const SizedBox(height: 16),
               _buildCodingProfiles(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () async {
+                  SharedPreferences prefs =
+                      await SharedPreferences.getInstance();
+                  await prefs.remove('user_data');
+                  await prefs.remove('access_token');
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const EmailVerificationPage()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  fixedSize: const Size(300, 70),
+                  backgroundColor: customBlue,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Log out',
+                  style: AppStyles.mondaB.copyWith(
+                    fontSize: 20,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
             ],
           ),
         ),

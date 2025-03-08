@@ -18,6 +18,7 @@ class Job {
   final String companyIndustry;
   final int companySize;
   final List<dynamic> applicants;
+  final double matchPercentage;
   Job({
     required this.id,
     required this.title,
@@ -38,6 +39,7 @@ class Job {
     required this.companyIndustry,
     required this.companySize,
     required this.applicants,
+    this.matchPercentage = 0.0,
   });
 
   Map<String, dynamic> toJson() => {
@@ -59,7 +61,8 @@ class Job {
         'companyDescription': companyDescription,
         'companyIndustry': companyIndustry,
         'companySize': companySize,
-        'applicants': applicants
+        'applicants': applicants,
+        'matchPercentage': matchPercentage,
       };
 
   factory Job.fromJson(Map<String, dynamic> json) {
@@ -75,6 +78,7 @@ class Job {
         description: json['description'] ?? '',
         salaryRangeMin: (json['salaryRangeMin'] ?? 0).toDouble(),
         salaryRangeMax: (json['salaryRangeMax'] ?? 0).toDouble(),
+        matchPercentage: (json['matchPercentage'] as num?)?.toDouble() ?? 0.0,
         responsibilities: List<String>.from(json['responsibilities'] ?? []),
         qualifications: List<String>.from(json['qualifications'] ?? []),
         postingDate: DateTime.parse(
@@ -91,5 +95,5 @@ class Job {
       print('Error parsing Job: $e');
       rethrow;
     }
-  } 
+  }
 }

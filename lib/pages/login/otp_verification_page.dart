@@ -25,14 +25,14 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
   bool _isLoading = false;
 
   @override
-  void dispose() {
+  void dispose() {  
     _controller.dispose();
     super.dispose();
   }
 
   Future<void> _verifyOTP() async {
     String otp = _controller.text;
-    if (otp.length != 6) {
+    if (otp.length != 4) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a valid 6-digit OTP')),
       );
@@ -197,7 +197,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
-                    hintText: "000000",
+                    hintText: "0000",
                     hintStyle: AppStyles.mondaN.copyWith(
                       fontSize: 24,
                       color: Colors.white24,

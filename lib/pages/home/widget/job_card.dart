@@ -36,6 +36,17 @@ class JobCard extends StatelessWidget {
     return currentDate.difference(givenDate).inDays;
   }
 
+  // Function to get color based on match percentage
+  Color getMatchColor(double percentage) {
+    if (percentage >= 80.0) {
+      return Colors.green;
+    } else if (percentage >= 60.0) {
+      return Colors.amber;
+    } else {
+      return Colors.redAccent;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -95,7 +106,7 @@ class JobCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      SizedBox(width: 16),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,7 +119,7 @@ class JobCard extends StatelessWidget {
                                 color: customBlue,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Row(
                               children: [
                                 Icon(
@@ -116,7 +127,7 @@ class JobCard extends StatelessWidget {
                                   size: 14,
                                   color: Colors.white70,
                                 ),
-                                SizedBox(width: 4),
+                                const SizedBox(width: 4),
                                 Text(
                                   '${job.companySize}+ employees',
                                   style: AppStyles.mondaN.copyWith(
@@ -129,6 +140,8 @@ class JobCard extends StatelessWidget {
                           ],
                         ),
                       ),
+                      // Match percentage indicator
+                      _buildMatchPercentage(job.matchPercentage),
                     ],
                   ),
                 ),
@@ -164,21 +177,21 @@ class JobCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     _buildInfoRow(
                       MdiIcons.mapMarker,
                       job.location,
                       MdiIcons.briefcaseOutline,
                       job.experience,
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     _buildInfoRow(
                       MdiIcons.currencyInr,
                       "₹${formatSalary(job.salaryRangeMin)} - ${formatSalary(job.salaryRangeMax)}",
                       MdiIcons.calendarClock,
                       formatDate(job.deadline.toIso8601String()),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -187,7 +200,7 @@ class JobCard extends StatelessWidget {
                           .map((skill) => _buildSkillChip(skill))
                           .toList(),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -205,14 +218,14 @@ class JobCard extends StatelessWidget {
                               color: Colors.white60,
                               size: 16,
                             ),
-                            SizedBox(width: 4),
-                            // Text(
-                            //   "${job.applicants.length} applicants",
-                            //   style: AppStyles.mondaN.copyWith(
-                            //     fontSize: 12,
-                            //     color: Colors.white60,
-                            //   ),
-                            // ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "${job.applicants.length} applicants",
+                              style: AppStyles.mondaN.copyWith(
+                                fontSize: 12,
+                                color: Colors.white60,
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -227,12 +240,45 @@ class JobCard extends StatelessWidget {
     );
   }
 
+  // Widget to display match percentage
+  Widget _buildMatchPercentage(double percentage) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: getMatchColor(percentage).withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: getMatchColor(percentage),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            MdiIcons.checkCircle,
+            size: 14,
+            color: getMatchColor(percentage),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            "${percentage.toStringAsFixed(1)}% Match",
+            style: AppStyles.mondaB.copyWith(
+              fontSize: 12,
+              color: getMatchColor(percentage),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInfoRow(
       IconData icon1, String text1, IconData icon2, String text2) {
     return Row(
       children: [
         Expanded(child: _buildInfoItem(icon1, text1)),
-        SizedBox(width: 16),
+        const SizedBox(width: 16),
         Expanded(child: _buildInfoItem(icon2, text2)),
       ],
     );
@@ -242,7 +288,7 @@ class JobCard extends StatelessWidget {
     return Row(
       children: [
         Icon(icon, size: 16, color: customBlue),
-        SizedBox(width: 4),
+        const SizedBox(width: 4),
         Expanded(
           child: Text(
             text,

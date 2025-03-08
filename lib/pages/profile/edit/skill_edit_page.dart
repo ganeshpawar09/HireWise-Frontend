@@ -26,29 +26,51 @@ class _SkillsEditPageState extends State<SkillsEditPage> {
 
   // Moved predefined skills to a separate constant
   static const List<String> _predefinedSkills = [
-    // Programming Languages
-    "Java", "JavaScript", "jQuery", "JSON", "Jenkins",
-    "Python", "PHP", "Ruby", "React", "React Native",
-    // Frameworks
-    "Django", "Docker", "Flutter", "Firebase",
-    // Cloud Platforms
-    "AWS", "Azure", "Google Cloud",
-    // Data Science
-    "Machine Learning", "Data Analysis", "Data Science", "Deep Learning",
-    // Database
-    "MongoDB", "MySQL", "PostgreSQL",
-    // Tools
-    "Git", "GitHub", "Visual Studio Code",
-    // Soft Skills
-    "Team Leadership", "Project Management", "Communication", "Problem Solving",
-    // Mobile Development
-    "Android Development", "iOS Development", "Kotlin", "Swift",
-    // Web Technologies
-    "HTML", "CSS", "Bootstrap", "TypeScript",
-    // Testing
-    "Unit Testing", "QA Testing", "Automated Testing",
-    // Design
-    "UI Design", "UX Design", "Figma", "Adobe XD"
+    "React",
+    "Vue.js",
+    "Next.js",
+    "JavaScript",
+    "TypeScript",
+    "Redux",
+    "CSS",
+    "Sass",
+    "Tailwind CSS",
+    "GraphQL",
+    "Webpack",
+    "Flutter",
+    "Dart",
+    "Swift",
+    "Kotlin",
+    "React Native",
+    "Android",
+    "iOS",
+    "Objective-C",
+    "Xcode",
+    "Java",
+    "Node.js",
+    "Express",
+    "MongoDB",
+    "Python",
+    "PostgreSQL",
+    "FastAPI",
+    "Java",
+    "Spring Boot",
+    "MySQL",
+    "Redis",
+    "Kafka",
+    "Docker",
+    "Kubernetes",
+    "AWS",
+    "TensorFlow",
+    "PyTorch",
+    "Machine Learning",
+    "Deep Learning",
+    "NLP",
+    "Scikit-learn",
+    "Pandas",
+    "Keras",
+    "Matplotlib",
+    "OpenCV"
   ];
 
   List<String> _filteredSkills = [];
@@ -184,7 +206,7 @@ class _SkillsEditPageState extends State<SkillsEditPage> {
     final updatedUserData = {"keySkills": _selectedSkills};
 
     try {
-      await userProvider.updateUserProfile(context,updatedUserData);
+      await userProvider.updateUserProfile(context, updatedUserData);
       Navigator.pop(context);
     } catch (e) {
       print(e.toString());

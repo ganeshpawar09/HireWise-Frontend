@@ -161,6 +161,7 @@ class UserProvider extends ChangeNotifier {
       }
     } catch (e) {
       _error = e.toString();
+      print(_error);
       _showSnackBar(context, "Failed to fetch profile data. Please try again.");
     }
   }
