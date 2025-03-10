@@ -108,6 +108,7 @@ class JobProvider with ChangeNotifier {
     }
 
     _setLoading(true);
+    _recommendedJobs = [];
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/recommended'),
@@ -154,6 +155,7 @@ class JobProvider with ChangeNotifier {
     }
 
     _setLoading(true);
+    _appliedJobs = [];
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/applied'),
@@ -181,6 +183,7 @@ class JobProvider with ChangeNotifier {
     String? clusterName,
   }) async {
     _setLoading(true);
+    _searchJobs = [];
     try {
       final userId = userProvider.user?.id;
       final response = await http.post(

@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:hirewise/pages/hackathon/widget/hackathon_card.dart';
+import 'package:hirewise/provider/hackathon_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:hirewise/provider/job_provider.dart';
 import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/const/font.dart';
-import 'package:hirewise/pages/home/widget/job_card.dart';
 import 'package:hirewise/pages/home/widget/job_card_skelaton.dart';
 
-class JobSearchResultsPage extends StatefulWidget {
-  final String? clusterName;
+class HackathonSearchResultsPage extends StatefulWidget {
+  final String? query;
 
-  const JobSearchResultsPage({
+  const HackathonSearchResultsPage({
     super.key,
-    this.clusterName,
+    this.query,
   });
 
   @override
-  State<JobSearchResultsPage> createState() => _JobSearchResultsPageState();
+  State<HackathonSearchResultsPage> createState() =>
+      _HackathonSearchResultsPageState();
 }
 
-class _JobSearchResultsPageState extends State<JobSearchResultsPage> {
+class _HackathonSearchResultsPageState
+    extends State<HackathonSearchResultsPage> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       GlobalKey<RefreshIndicatorState>();
@@ -34,20 +36,33 @@ class _JobSearchResultsPageState extends State<JobSearchResultsPage> {
     super.dispose();
   }
 
-  Future<void> fetch(bool isRefresh) async {
-    final jobProvider = Provider.of<JobProvider>(context, listen: false);
+  Future<void> _initialFetch() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
 
     try {
-      if (isRefresh || jobProvider.jobs.isEmpty) {
-        await jobProvider.searchJobs(
+      await fetch(false);
+    } catch (e) {
+      if (!mounted) return;
+      _showError("Failed to load initial data");
+    }
+  }
+
+  Future<void> fetch(bool isRefresh) async {
+    final hackathonProvider =
+        Provider.of<HackathonProvider>(context, listen: false);
+
+    try {
+      if (isRefresh || hackathonProvider.searchedHackathon.isEmpty) {
+        await hackathonProvider.searchHackathon(
           context,
-          clusterName: widget.clusterName,
+          query: widget.query,
         );
       }
     } catch (e) {
       if (!mounted) return;
-      _showError("Something went wrong while fetching jobs");
-      rethrow; // Allow the error to propagate for proper error handling
+      _showError("Something went wrong while fetching hackathons");
+      rethrow;
     }
   }
 
@@ -179,28 +194,25 @@ class _JobSearchResultsPageState extends State<JobSearchResultsPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Consumer<JobProvider>(
-        builder: (context, jobProvider, _) {
+      body: Consumer<HackathonProvider>(
+        builder: (context, hackathonProvider, _) {
           Widget content;
 
-          if (jobProvider.isLoading) {
+          if (hackathonProvider.isLoading) {
             content = ListView.builder(
               itemCount: 5,
               itemBuilder: (_, __) => const JobCardSkeleton(),
             );
-          } else if (jobProvider.jobs.isEmpty) {
+          } else if (hackathonProvider.searchedHackathon.isEmpty) {
             content = _buildEmptyState();
           } else {
             content = ListView.builder(
               controller: _scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
-              itemCount: jobProvider.jobs.length,
+              itemCount: hackathonProvider.searchedHackathon.length,
               itemBuilder: (context, index) {
-                final job = jobProvider.jobs[index];
-                return JobCard(
-                  job: job,
-                  applied: false,
-                  page: 3,
+                return HackathonCard(
+                  hackathon: hackathonProvider.searchedHackathon[index],
                 );
               },
             );

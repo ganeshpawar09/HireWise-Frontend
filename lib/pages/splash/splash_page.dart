@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/const/font.dart';
 import 'package:hirewise/pages/login/email_verification_page.dart';
-import 'package:hirewise/widget/customBottomNavigator.dart';
+import 'package:hirewise/widget/custom_bottom_navigator_page.dart';
 import 'package:provider/provider.dart';
 import 'package:hirewise/provider/user_provider.dart';
 

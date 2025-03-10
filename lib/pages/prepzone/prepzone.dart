@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/const/font.dart';
+import 'package:hirewise/pages/prepzone/roadmap/roadmap_page.dart';
+import 'package:hirewise/pages/prepzone/sheet/dsa_sheet_page.dart';
 import 'package:hirewise/pages/prepzone/studymaterial/aptitude_study_material_page.dart';
 import 'package:hirewise/pages/prepzone/studymaterial/cs_fundamentals_study_material_page.dart';
 import 'package:hirewise/pages/prepzone/test/aptitude/aptitude_test_setup_page.dart';
 import 'package:hirewise/pages/prepzone/test/mockinterview/mock_interview_setup_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PrepZonePage extends StatelessWidget {
   const PrepZonePage({super.key});
@@ -17,12 +20,31 @@ class PrepZonePage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _buildWelcomeCard(),
+          // 1. Assessment Center first
           _buildSectionHeader(
             'Assessment Center',
             Icons.assessment_outlined,
             accentMint,
           ),
           _buildPracticeSection(),
+
+          // 2. New section for Roadmap and DSA Sheet
+          _buildSectionHeader(
+            'Programming Track',
+            Icons.code_outlined,
+            accentBlue,
+          ),
+          _buildProgrammingTrackSection(),
+
+          // 3. Community section
+          _buildSectionHeader(
+            'Community',
+            Icons.people_alt_outlined,
+            accentPink,
+          ),
+          _buildCommunitySection(),
+
+          // 4. Study Materials last
           _buildSectionHeader(
             'Study Materials',
             Icons.menu_book_outlined,
@@ -150,7 +172,7 @@ class PrepZonePage extends StatelessWidget {
                   color: accentBlue.withOpacity(0.3),
                 ),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.rocket_launch_outlined,
                 color: accentBlue,
                 size: 36,
@@ -236,6 +258,51 @@ class PrepZonePage extends StatelessWidget {
     );
   }
 
+  // New section for Roadmap and DSA Sheet
+  Widget _buildProgrammingTrackSection() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 0.85,
+      ),
+      itemCount: 2,
+      itemBuilder: (context, index) {
+        final paths = [
+          PathItem(
+            "Roadmap",
+            "Personalized learning path for development",
+            Icons.map_outlined,
+            accentBlue,
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RoadmapPage(),
+              ),
+            ),
+          ),
+          PathItem(
+            "DSA Sheet",
+            "150 curated questions for interviews",
+            Icons.format_list_numbered_outlined,
+            accentPurple,
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const DSASheetPage(),
+              ),
+            ),
+          ),
+        ];
+        return _buildCard(paths[index]);
+      },
+    );
+  }
+
   Widget _buildPreparationSection() {
     return GridView.builder(
       shrinkWrap: true,
@@ -277,6 +344,90 @@ class PrepZonePage extends StatelessWidget {
         ];
         return _buildCard(paths[index]);
       },
+    );
+  }
+
+  // Community section with the Connect with Peers card
+  Widget _buildCommunitySection() {
+    return Container(
+      height: 160,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: GestureDetector(
+        onTap: () async {
+          final Uri url =
+              Uri.parse('https://lovely-gelato-dda4ed.netlify.app/');
+          if (await canLaunchUrl(url)) {
+            await launchUrl(url, mode: LaunchMode.externalApplication);
+          } else {
+            throw 'Could not launch $url';
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                accentPink.withOpacity(0.15),
+                accentOrange.withOpacity(0.15),
+              ],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.1),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Connect with Peers",
+                      style: AppStyles.mondaB.copyWith(
+                        fontSize: 24,
+                        color: Colors.white,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      "Practice communication in English with other candidates",
+                      style: AppStyles.mondaN.copyWith(
+                        fontSize: 15,
+                        color: Colors.white.withOpacity(0.7),
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: accentPink.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(
+                  Icons.groups_outlined,
+                  color: accentPink,
+                  size: 36,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

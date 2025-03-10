@@ -1,22 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/const/font.dart';
-import 'package:hirewise/models/job_model.dart';
-import 'package:hirewise/pages/home/home_detail_page.dart';
+import 'package:hirewise/models/hackathon_model.dart';
+import 'package:hirewise/pages/hackathon/hackathon_detail_page.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:intl/intl.dart';
 
-class JobCard extends StatelessWidget {
-  final Job job;
-  final bool applied;
-  final int page;
-  const JobCard(
-      {super.key,
-      required this.job,
-      required this.applied,
-      required this.page});
+class HackathonCard extends StatelessWidget {
+  final Hackathon hackathon;
+  const HackathonCard({
+    super.key,
+    required this.hackathon,
+  });
 
-  String formatSalary(double amount) {
+  String formatPrizeMoney(double amount) {
     if (amount >= 100000) {
       return '${(amount / 100000).toStringAsFixed(1)}L';
     } else if (amount >= 1000) {
@@ -25,26 +22,13 @@ class JobCard extends StatelessWidget {
     return amount.toStringAsFixed(0);
   }
 
-  String formatDate(String dateStr) {
-    final date = DateTime.parse(dateStr);
-    return "Deadline: ${DateFormat('MMM d, yyyy').format(date)}";
+  String formatDateRange(DateTime start, DateTime end) {
+    return "${DateFormat('MMM d').format(start)} - ${DateFormat('MMM d, yyyy').format(end)}";
   }
 
-  int dayAgo(String givenDateStr) {
-    DateTime givenDate = DateTime.parse(givenDateStr);
+  int daysLeft(DateTime endDate) {
     DateTime currentDate = DateTime.now();
-    return currentDate.difference(givenDate).inDays;
-  }
-
-  // Function to get color based on match percentage
-  Color getMatchColor(double percentage) {
-    if (percentage >= 80.0) {
-      return Colors.green;
-    } else if (percentage >= 60.0) {
-      return Colors.amber;
-    } else {
-      return Colors.redAccent;
-    }
+    return endDate.difference(currentDate).inDays;
   }
 
   @override
@@ -56,10 +40,8 @@ class JobCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => HomeDetailPage(
-                job: job,
-                applied: applied,
-                page: page,
+              builder: (context) => HackathonDetailPage(
+                hackathon: hackathon,
               ),
             ),
           );
@@ -97,13 +79,41 @@ class JobCard extends StatelessWidget {
                           ],
                         ),
                         child: Center(
-                          child: Text(
-                            job.companyName[0],
-                            style: AppStyles.mondaB.copyWith(
-                              fontSize: 24,
-                              color: customBlue,
-                            ),
-                          ),
+                          child: hackathon.imageUrl.isEmpty
+                              ? _buildInitialLetter()
+                              : ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Image.network(
+                                    hackathon.imageUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      // Fallback to initial letter when image fails to load
+                                      return _buildInitialLetter();
+                                    },
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                      if (loadingProgress == null) {
+                                        return child;
+                                      }
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          value: loadingProgress
+                                                      .expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                      .cumulativeBytesLoaded /
+                                                  loadingProgress
+                                                      .expectedTotalBytes!
+                                              : null,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  customBlue),
+                                          strokeWidth: 2.0,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -113,7 +123,9 @@ class JobCard extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              job.companyName,
+                              hackathon.organizer.isNotEmpty
+                                  ? hackathon.organizer
+                                  : "Hackathon",
                               style: AppStyles.mondaB.copyWith(
                                 fontSize: 16,
                                 color: customBlue,
@@ -123,13 +135,14 @@ class JobCard extends StatelessWidget {
                             Row(
                               children: [
                                 Icon(
-                                  MdiIcons.accountGroup,
+                                  MdiIcons.calendarRange,
                                   size: 14,
                                   color: Colors.white70,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '${job.companySize}+ employees',
+                                  formatDateRange(
+                                      hackathon.startDate, hackathon.endDate),
                                   style: AppStyles.mondaN.copyWith(
                                     fontSize: 12,
                                     color: Colors.white70,
@@ -140,8 +153,8 @@ class JobCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // Match percentage indicator
-                      _buildMatchPercentage(job.matchPercentage),
+                      // Status indicator (days left or ongoing)
+                      _buildStatusIndicator(),
                     ],
                   ),
                 ),
@@ -156,23 +169,8 @@ class JobCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            job.title,
+                            hackathon.hackathonName,
                             style: AppStyles.mondaB.copyWith(fontSize: 18),
-                          ),
-                        ),
-                        Container(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: customBlue.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            job.jobType,
-                            style: AppStyles.mondaN.copyWith(
-                              fontSize: 12,
-                              color: customBlue,
-                            ),
                           ),
                         ),
                       ],
@@ -180,55 +178,26 @@ class JobCard extends StatelessWidget {
                     const SizedBox(height: 16),
                     _buildInfoRow(
                       MdiIcons.mapMarker,
-                      job.location,
-                      MdiIcons.briefcaseOutline,
-                      job.experience,
+                      hackathon.location,
+                      MdiIcons.accountGroup,
+                      "Max ${hackathon.maxTeamSize} members",
                     ),
                     const SizedBox(height: 8),
                     _buildInfoRow(
-                      MdiIcons.currencyInr,
-                      "₹${formatSalary(job.salaryRangeMin)} - ${formatSalary(job.salaryRangeMax)}",
-                      MdiIcons.calendarClock,
-                      formatDate(job.deadline.toIso8601String()),
+                      MdiIcons.trophy,
+                      "₹${formatPrizeMoney(hackathon.prizeMoney)} Prize Pool",
+                      MdiIcons.fileDocumentOutline,
+                      "${hackathon.problemStatements.length} Problems",
                     ),
                     const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: job.requiredSkills
-                          .take(3)
-                          .map((skill) => _buildSkillChip(skill))
-                          .toList(),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "${dayAgo(job.postingDate.toString())} days ago",
-                          style: AppStyles.mondaN.copyWith(
-                            fontSize: 12,
-                            color: Colors.white60,
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Icon(
-                              MdiIcons.accountGroup,
-                              color: Colors.white60,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              "${job.applicants.length} applicants",
-                              style: AppStyles.mondaN.copyWith(
-                                fontSize: 12,
-                                color: Colors.white60,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    Text(
+                      hackathon.description,
+                      style: AppStyles.mondaN.copyWith(
+                        fontSize: 12,
+                        color: Colors.white70,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -240,15 +209,36 @@ class JobCard extends StatelessWidget {
     );
   }
 
-  // Widget to display match percentage
-  Widget _buildMatchPercentage(double percentage) {
+  Widget _buildInitialLetter() {
+    return Text(
+      hackathon.organizer.isNotEmpty
+          ? hackathon.organizer[0]
+          : hackathon.hackathonName[0],
+      style: AppStyles.mondaB.copyWith(
+        fontSize: 24,
+        color: customBlue,
+      ),
+    );
+  }
+
+  // Widget to display status indicator (days left or ongoing)
+  Widget _buildStatusIndicator() {
+    final days = daysLeft(hackathon.endDate);
+    final isOngoing = DateTime.now().isAfter(hackathon.startDate) &&
+        DateTime.now().isBefore(hackathon.endDate);
+
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: getMatchColor(percentage).withOpacity(0.2),
+        color: isOngoing
+            ? Colors.green.withOpacity(0.2)
+            : (days > 0
+                ? customBlue.withOpacity(0.2)
+                : Colors.red.withOpacity(0.2)),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: getMatchColor(percentage),
+          color:
+              isOngoing ? Colors.green : (days > 0 ? customBlue : Colors.red),
           width: 1.5,
         ),
       ),
@@ -256,16 +246,21 @@ class JobCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            MdiIcons.checkCircle,
+            isOngoing
+                ? MdiIcons.play
+                : (days > 0 ? MdiIcons.clockOutline : MdiIcons.closeCircle),
             size: 14,
-            color: getMatchColor(percentage),
+            color:
+                isOngoing ? Colors.green : (days > 0 ? customBlue : Colors.red),
           ),
           const SizedBox(width: 4),
           Text(
-            "${percentage.toStringAsFixed(1)}% Match",
+            isOngoing ? "Ongoing" : (days > 0 ? "$days days left" : "Ended"),
             style: AppStyles.mondaB.copyWith(
               fontSize: 12,
-              color: getMatchColor(percentage),
+              color: isOngoing
+                  ? Colors.green
+                  : (days > 0 ? customBlue : Colors.red),
             ),
           ),
         ],
@@ -298,23 +293,6 @@ class JobCard extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSkillChip(String skill) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        skill,
-        style: AppStyles.mondaN.copyWith(
-          fontSize: 12,
-          color: Colors.white70,
-        ),
-      ),
     );
   }
 }

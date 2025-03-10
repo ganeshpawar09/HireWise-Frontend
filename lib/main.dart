@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/pages/splash/splash_page.dart';
+import 'package:hirewise/provider/hackathon_provider.dart';
 import 'package:hirewise/provider/job_provider.dart';
 import 'package:hirewise/provider/topic_provider.dart';
 import 'package:hirewise/provider/user_provider.dart';
@@ -18,6 +19,7 @@ class HireWise extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => HackathonProvider()),
         ChangeNotifierProxyProvider<UserProvider, TopicProvider>(
           create: (_) => TopicProvider(userProvider: UserProvider()),
           update: (_, userProvider, jobProvider) =>

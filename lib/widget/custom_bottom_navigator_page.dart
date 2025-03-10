@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hirewise/models/user_model.dart';
+import 'package:hirewise/pages/hackathon/hackathon_page.dart';
 import 'package:provider/provider.dart';
-import 'package:hirewise/provider/user_provider.dart'; 
+import 'package:hirewise/provider/user_provider.dart';
 import 'package:hirewise/pages/home/home_page.dart';
 import 'package:hirewise/pages/apply/apply_page.dart';
 import 'package:hirewise/pages/prepzone/prepzone.dart';
@@ -30,6 +31,7 @@ class _CustomBottomNavigatorState extends State<CustomBottomNavigator> {
       HomePage(),
       ApplyPage(),
       PrepZonePage(),
+      HackathonPage(),
       PrepZonePage(),
     ]);
   }
@@ -39,7 +41,7 @@ class _CustomBottomNavigatorState extends State<CustomBottomNavigator> {
     final userProvider = Provider.of<UserProvider>(context);
     User user = userProvider.user!;
 
-    _pages[3] = ProfilePage(user: user, viewer: false);
+    _pages[4] = ProfilePage(user: user, viewer: false);
 
     return Scaffold(
       body: _pages[_currIndex],
@@ -71,6 +73,11 @@ class _CustomBottomNavigatorState extends State<CustomBottomNavigator> {
             icon: Icon(MdiIcons.headLightbulbOutline),
             activeIcon: Icon(MdiIcons.headLightbulb),
             label: "Prep Zone",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(MdiIcons.trophyOutline),
+            activeIcon: Icon(MdiIcons.trophy),
+            label: "Hackathon",
           ),
           BottomNavigationBarItem(
             icon: Icon(MdiIcons.accountOutline),
