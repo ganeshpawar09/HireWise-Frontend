@@ -123,7 +123,7 @@ class UserProvider extends ChangeNotifier {
       }
     } catch (e) {
       _error = e.toString();
-      _showSnackBar(context, "Profile update failed: ${e.toString()}");
+      print("Profile update failed: ${e.toString()}");
     }
   }
 

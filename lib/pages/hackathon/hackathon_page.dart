@@ -2,14 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/const/font.dart';
 import 'package:hirewise/models/hackathon_model.dart';
-import 'package:hirewise/models/job_model.dart';
 import 'package:hirewise/pages/hackathon/hackathon_search_page.dart';
 import 'package:hirewise/pages/hackathon/widget/hackathon_card.dart';
-import 'package:hirewise/pages/home/job_search_page.dart';
-import 'package:hirewise/pages/home/widget/job_card.dart';
 import 'package:hirewise/pages/home/widget/job_card_skelaton.dart';
 import 'package:hirewise/provider/hackathon_provider.dart';
-import 'package:hirewise/provider/job_provider.dart';
 import 'package:provider/provider.dart';
 
 class HackathonPage extends StatefulWidget {

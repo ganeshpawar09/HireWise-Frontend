@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hirewise/pages/hackathon/hackathon_search_result_page.dart';
 import 'package:hirewise/provider/hackathon_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:hirewise/provider/job_provider.dart';
 import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/const/font.dart';
 

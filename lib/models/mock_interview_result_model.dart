@@ -1,9 +1,9 @@
 class MockInterviewResult {
   final String question;
-  final double videoConfidence;
-  final double audioConfidence;
-  final double fluencyPercentage;
-  final Transcription transcription;
+  final List<double> videoConfidence;
+  final List<double> audioConfidence;
+  final List<double> fluencyPercentage;
+  final String transcription;
   final Grammar grammar;
 
   MockInterviewResult({
@@ -17,12 +17,15 @@ class MockInterviewResult {
 
   factory MockInterviewResult.fromJson(Map<String, dynamic> json) {
     return MockInterviewResult(
-      question: json['question'],
-      videoConfidence: (json['video_confidence'] as num).toDouble(),
-      audioConfidence: (json['audio_confidence'] as num).toDouble(),
-      fluencyPercentage: (json['fluency_percentage'] as num).toDouble(),
-      transcription: Transcription.fromJson(json['transcription']),
-      grammar: Grammar.fromJson(json['grammar']),
+      question: json['question'] ?? '',
+      videoConfidence: List<double>.from(
+          json['video_confidence']?.map((e) => (e as num).toDouble()) ?? []),
+      audioConfidence: List<double>.from(
+          json['audio_confidence']?.map((e) => (e as num).toDouble()) ?? []),
+      fluencyPercentage: List<double>.from(
+          json['fluency_percentage']?.map((e) => (e as num).toDouble()) ?? []),
+      transcription: json['transcription'] ?? '',
+      grammar: Grammar.fromJson(json['grammar'] ?? {}),
     );
   }
 
@@ -32,64 +35,60 @@ class MockInterviewResult {
       'video_confidence': videoConfidence,
       'audio_confidence': audioConfidence,
       'fluency_percentage': fluencyPercentage,
-      'transcription': transcription.toJson(),
+      'transcription': transcription,
       'grammar': grammar.toJson(),
     };
   }
 }
 
-class Transcription {
-  final String transcription;
-  final Map<String, int> fillerWords;
-  final int totalFillers;
-
-  Transcription({
-    required this.transcription,
-    required this.fillerWords,
-    required this.totalFillers,
-  });
-
-  factory Transcription.fromJson(Map<String, dynamic> json) {
-    return Transcription(
-      transcription: json['transcription'],
-      fillerWords: Map<String, int>.from(json['filler_words'] ?? {}),
-      totalFillers: json['total_fillers'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'transcription': transcription,
-      'filler_words': fillerWords,
-      'total_fillers': totalFillers,
-    };
-  }
-}
-
 class Grammar {
-  final List<String> grammarMistakes;
+  final String grammarAccuracy;
   final String? enhancedResponse;
-  final List<String> feedback;
 
   Grammar({
-    required this.grammarMistakes,
+    required this.grammarAccuracy,
     this.enhancedResponse,
-    required this.feedback,
   });
 
   factory Grammar.fromJson(Map<String, dynamic> json) {
     return Grammar(
-      grammarMistakes: List<String>.from(json['grammar_mistakes'] ?? []),
+      grammarAccuracy: json['grammar_accuracy'] ?? 'Unknown',
       enhancedResponse: json['enhanced_response'],
-      feedback: List<String>.from(json['feedback'] ?? []),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'grammar_mistakes': grammarMistakes,
+      'grammar_accuracy': grammarAccuracy,
       'enhanced_response': enhancedResponse,
-      'feedback': feedback,
+    };
+  }
+}
+
+class Mistake {
+  final String incorrect;
+  final String correct;
+  final String type;
+
+  Mistake({
+    required this.incorrect,
+    required this.correct,
+    required this.type,
+  });
+
+  factory Mistake.fromJson(Map<String, dynamic> json) {
+    return Mistake(
+      incorrect: json['incorrect'] ?? '',
+      correct: json['correct'] ?? '',
+      type: json['type'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'incorrect': incorrect,
+      'correct': correct,
+      'type': type,
     };
   }
 }

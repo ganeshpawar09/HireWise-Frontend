@@ -1199,10 +1199,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (hasInterviews) {
       for (var result in results) {
-        avgVideoConfidence += result.videoConfidence;
-        avgAudioConfidence += result.audioConfidence;
-        avgFluency += result.fluencyPercentage;
-        totalFillerWords += result.transcription.totalFillers;
+        avgVideoConfidence += 0; //result.videoConfidence;
+        avgAudioConfidence += 0; //result.audioConfidence;
+        avgFluency += 0; //result.fluencyPercentage;
+        totalFillerWords += 0; //result.transcription.totalFillers;
       }
       avgVideoConfidence /= results.length;
       avgAudioConfidence /= results.length;
