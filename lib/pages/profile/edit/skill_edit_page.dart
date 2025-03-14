@@ -23,55 +23,123 @@ class _SkillsEditPageState extends State<SkillsEditPage> {
   final FocusNode _skillSearchFocus = FocusNode();
   List<String> _selectedSkills = [];
   bool _showSuggestions = false;
+  String _currentCategory = 'All';
 
-  // Moved predefined skills to a separate constant
-  static const List<String> _predefinedSkills = [
-    "React",
-    "Vue.js",
-    "Next.js",
-    "JavaScript",
-    "TypeScript",
-    "Redux",
-    "CSS",
-    "Sass",
-    "Tailwind CSS",
-    "GraphQL",
-    "Webpack",
-    "Flutter",
-    "Dart",
-    "Swift",
-    "Kotlin",
-    "React Native",
-    "Android",
-    "iOS",
-    "Objective-C",
-    "Xcode",
-    "Java",
-    "Node.js",
-    "Express",
-    "MongoDB",
-    "Python",
-    "PostgreSQL",
-    "FastAPI",
-    "Java",
-    "Spring Boot",
-    "MySQL",
-    "Redis",
-    "Kafka",
-    "Docker",
-    "Kubernetes",
-    "AWS",
-    "TensorFlow",
-    "PyTorch",
-    "Machine Learning",
-    "Deep Learning",
-    "NLP",
-    "Scikit-learn",
-    "Pandas",
-    "Keras",
-    "Matplotlib",
-    "OpenCV"
-  ];
+  // Skill categories
+  static const Map<String, List<String>> _skillCategories = {
+    'Problem-Solving Skills': [
+      "Critical thinking",
+      "Analytical skills",
+      "Decision-making",
+      "Creativity and innovation",
+      "Logical reasoning",
+      "Research and information gathering",
+      "Troubleshooting",
+      "Adaptability",
+      "Resilience",
+      "Problem decomposition",
+    ],
+    'Teamwork Skills': [
+      "Communication (verbal & written)",
+      "Collaboration",
+      "Active listening",
+      "Conflict resolution",
+      "Empathy",
+      "Reliability and responsibility",
+      "Negotiation",
+      "Interpersonal skills",
+      "Accountability",
+      "Trust-building",
+    ],
+    'Leadership Skills': [
+      "Strategic thinking",
+      "Vision and goal setting",
+      "Motivation and inspiration",
+      "Delegation",
+      "Emotional intelligence",
+      "Coaching and mentoring",
+      "Accountability",
+      "Time management",
+      "Decision-making under pressure",
+      "Adaptability in leadership",
+    ],
+    'Personal Development Skills': [
+      "Self-motivation",
+      "Growth mindset",
+      "Time management",
+      "Stress management",
+      "Work-life balance",
+      "Self-awareness",
+      "Continuous learning",
+      "Networking",
+    ],
+    'Frontend': [
+      "React",
+      "Vue.js",
+      "Next.js",
+      "JavaScript",
+      "TypeScript",
+      "Redux",
+      "CSS",
+      "Sass",
+      "Tailwind CSS",
+      "GraphQL",
+      "Webpack",
+    ],
+    'Mobile': [
+      "Flutter",
+      "Dart",
+      "Swift",
+      "Kotlin",
+      "React Native",
+      "Android",
+      "iOS",
+      "Objective-C",
+      "Xcode",
+    ],
+    'Backend': [
+      "Java",
+      "Node.js",
+      "Express",
+      "MongoDB",
+      "Python",
+      "PostgreSQL",
+      "FastAPI",
+      "Spring Boot",
+      "MySQL",
+      "Redis",
+      "Kafka",
+    ],
+    'DevOps': [
+      "Docker",
+      "Kubernetes",
+      "AWS",
+      "CI/CD",
+      "Jenkins",
+      "Terraform",
+      "GitLab",
+      "GitHub Actions",
+    ],
+    'AI/ML': [
+      "TensorFlow",
+      "PyTorch",
+      "Machine Learning",
+      "Deep Learning",
+      "NLP",
+      "Scikit-learn",
+      "Pandas",
+      "Keras",
+      "Matplotlib",
+      "OpenCV",
+    ],
+  };
+
+  // Compute all skills for search
+  List<String> get _allSkills {
+    final allSkills = <String>[];
+    _skillCategories.forEach((_, skills) => allSkills.addAll(skills));
+    return allSkills;
+  }
 
   List<String> _filteredSkills = [];
 
@@ -102,7 +170,7 @@ class _SkillsEditPageState extends State<SkillsEditPage> {
     setState(() {
       _filteredSkills = searchText.isEmpty
           ? []
-          : _predefinedSkills
+          : _allSkills
               .where((skill) =>
                   skill.toLowerCase().contains(searchText) &&
                   !_selectedSkills.contains(skill))
@@ -163,42 +231,165 @@ class _SkillsEditPageState extends State<SkillsEditPage> {
     );
   }
 
+  Widget _buildCategorySelector() {
+    return SizedBox(
+      height: 50,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _buildCategoryChip('All'),
+          ..._skillCategories.keys.map(_buildCategoryChip),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip(String category) {
+    final isSelected = _currentCategory == category;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: FilterChip(
+        label: Text(category),
+        selected: isSelected,
+        onSelected: (selected) {
+          setState(() {
+            _currentCategory = category;
+          });
+        },
+        backgroundColor: cardBackgroundColor,
+        selectedColor: customBlue,
+        checkmarkColor: Colors.white,
+        labelStyle: AppStyles.mondaN.copyWith(
+          color: isSelected ? Colors.white : Colors.white70,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkillCategorySection(String category, List<String> skills) {
+    // Filter skills that are not already selected
+    final availableSkills =
+        skills.where((s) => !_selectedSkills.contains(s)).toList();
+
+    if (availableSkills.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          category,
+          style: AppStyles.mondaB.copyWith(
+            fontSize: 16,
+            color: customBlue,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8.0,
+          runSpacing: 8.0,
+          children: availableSkills.map((skill) {
+            return FilterChip(
+              label: Text(skill),
+              selected: false,
+              onSelected: (_) {
+                _addSkill(skill);
+              },
+              backgroundColor: cardBackgroundColor,
+              labelStyle: AppStyles.mondaN.copyWith(
+                color: Colors.white70,
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
   Widget _buildSelectedSkills() {
     if (_selectedSkills.isEmpty) return const SizedBox.shrink();
+
+    // Group selected skills by category
+    final Map<String, List<String>> categorizedSelectedSkills = {};
+
+    for (final skill in _selectedSkills) {
+      String foundCategory = 'Other';
+
+      for (final entry in _skillCategories.entries) {
+        if (entry.value.contains(skill)) {
+          foundCategory = entry.key;
+          break;
+        }
+      }
+
+      categorizedSelectedSkills.putIfAbsent(foundCategory, () => []);
+      categorizedSelectedSkills[foundCategory]!.add(skill);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 16),
         Text(
-          'Selected Skills',
-          style: AppStyles.mondaM.copyWith(
-            color: Colors.white70,
-            fontSize: 14,
+          'Your Skills',
+          style: AppStyles.mondaB.copyWith(
+            fontSize: 18,
+            color: customBlue,
           ),
         ),
         const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _selectedSkills.map((skill) {
-            return Chip(
-              label: Text(
-                skill,
-                style: AppStyles.mondaN.copyWith(color: customBlue),
+        ...categorizedSelectedSkills.entries.map((entry) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                entry.key,
+                style: AppStyles.mondaM.copyWith(
+                  color: Colors.white70,
+                  fontSize: 14,
+                ),
               ),
-              backgroundColor: backgroundColor,
-              deleteIcon: const Icon(
-                Icons.close,
-                size: 18,
-                color: customBlue,
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: entry.value.map((skill) {
+                  return Chip(
+                    label: Text(
+                      skill,
+                      style: AppStyles.mondaN.copyWith(color: customBlue),
+                    ),
+                    backgroundColor: backgroundColor,
+                    deleteIcon: const Icon(
+                      Icons.close,
+                      size: 18,
+                      color: customBlue,
+                    ),
+                    onDeleted: () => _removeSkill(skill),
+                  );
+                }).toList(),
               ),
-              onDeleted: () => _removeSkill(skill),
-            );
-          }).toList(),
-        ),
+              const SizedBox(height: 16),
+            ],
+          );
+        }),
       ],
     );
+  }
+
+  Widget _buildAvailableSkills() {
+    if (_currentCategory == 'All') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _skillCategories.entries.map((entry) {
+          return _buildSkillCategorySection(entry.key, entry.value);
+        }).toList(),
+      );
+    } else {
+      final skills = _skillCategories[_currentCategory] ?? [];
+      return _buildSkillCategorySection(_currentCategory, skills);
+    }
   }
 
   Future<void> _saveChanges() async {
@@ -207,9 +398,11 @@ class _SkillsEditPageState extends State<SkillsEditPage> {
 
     try {
       await userProvider.updateUserProfile(context, updatedUserData);
+      if (!mounted) return;
       Navigator.pop(context);
     } catch (e) {
       print(e.toString());
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error updating profile: $e')),
       );
@@ -223,10 +416,8 @@ class _SkillsEditPageState extends State<SkillsEditPage> {
       onSave: _saveChanges,
       children: [
         SingleChildScrollView(
-          // Wrap with SingleChildScrollView
           padding: const EdgeInsets.all(16),
           child: Column(
-            // Replace ListView with Column
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -269,7 +460,12 @@ class _SkillsEditPageState extends State<SkillsEditPage> {
                 ),
               ),
               _buildSkillSuggestions(),
+              const SizedBox(height: 16),
+              _buildCategorySelector(),
+              const SizedBox(height: 16),
               _buildSelectedSkills(),
+              const SizedBox(height: 16),
+              _buildAvailableSkills(),
               const SizedBox(height: 32),
             ],
           ),

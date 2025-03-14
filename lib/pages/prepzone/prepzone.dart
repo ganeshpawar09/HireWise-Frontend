@@ -355,7 +355,7 @@ class PrepZonePage extends StatelessWidget {
       child: GestureDetector(
         onTap: () async {
           final Uri url =
-              Uri.parse('https://lovely-gelato-dda4ed.netlify.app/');
+              Uri.parse('https://hirewise-webrtc.netlify.app/');
           if (await canLaunchUrl(url)) {
             await launchUrl(url, mode: LaunchMode.externalApplication);
           } else {

@@ -21,9 +21,9 @@ class _MockInterviewResultPageState extends State<MockInterviewResultPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: backgroundColor,
         elevation: 0,
         title: Text(
           'Interview Analysis',

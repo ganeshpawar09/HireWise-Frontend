@@ -21,6 +21,7 @@ import 'package:hirewise/pages/profile/edit/social_link_edit.dart';
 import 'package:hirewise/pages/profile/mock_interview_detail_page.dart';
 import 'package:hirewise/pages/profile/profile_builder_page.dart';
 import 'package:hirewise/pages/profile/profile_feedback_page.dart';
+import 'package:hirewise/pages/profile/user_analysis/user_analysis_page.dart';
 import 'package:hirewise/provider/user_provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -102,6 +103,21 @@ class _ProfilePageState extends State<ProfilePage> {
                       builder: (context) => ProfileFeedbackPage(
                             userId: widget.user.id,
                           )));
+                },
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              _buildActionButton(
+                title: 'Get Profile Analysis',
+                subtitle: 'Unlock insights and improve your skills',
+                icon: Icons.auto_graph,
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => UserAnalysisPage(
+                      user: widget.user,
+                    ),
+                  ));
                 },
               ),
               const SizedBox(height: 16),
@@ -1110,14 +1126,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                "Last test: ${hasTests ? '${assessments.last.testDate.day}/${assessments.last.testDate.month}/${assessments.last.testDate.year}' : ''}",
-                style:
-                    AppStyles.mondaN.copyWith(color: Colors.grey, fontSize: 12),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
             ] else
               Expanded(
                 child: Center(
@@ -1195,19 +1203,53 @@ class _ProfilePageState extends State<ProfilePage> {
     double avgVideoConfidence = 0;
     double avgAudioConfidence = 0;
     double avgFluency = 0;
-    int totalFillerWords = 0;
+    int grammarAccuracy = 0;
 
     if (hasInterviews) {
+      int totalResults = results.length;
+
       for (var result in results) {
-        avgVideoConfidence += 0; //result.videoConfidence;
-        avgAudioConfidence += 0; //result.audioConfidence;
-        avgFluency += 0; //result.fluencyPercentage;
-        totalFillerWords += 0; //result.transcription.totalFillers;
+        // Check if lists are not empty to avoid division by zero
+        double videoAvg = result.videoConfidence.isNotEmpty
+            ? (result.videoConfidence.reduce((a, b) => a + b) /
+                    result.videoConfidence.length) *
+                100
+            : 0;
+
+        double audioAvg = result.audioConfidence.isNotEmpty
+            ? (result.audioConfidence.reduce((a, b) => a + b) /
+                    result.audioConfidence.length) *
+                100
+            : 0;
+
+        double fluencyAvg = result.fluencyPercentage.isNotEmpty
+            ? (result.fluencyPercentage.reduce((a, b) => a + b) /
+                    result.fluencyPercentage.length) *
+                100
+            : 0;
+
+        String grammarAccuracyStr =
+            result.grammar.grammarAccuracy.replaceAll('%', '');
+        int grammarAcc = int.tryParse(grammarAccuracyStr) ?? 0;
+
+        // Accumulate values
+        avgVideoConfidence += videoAvg;
+        avgAudioConfidence += audioAvg;
+        avgFluency += fluencyAvg;
+        grammarAccuracy += grammarAcc;
       }
-      avgVideoConfidence /= results.length;
-      avgAudioConfidence /= results.length;
-      avgFluency /= results.length;
-      totalFillerWords = (totalFillerWords / results.length).round();
+
+      if (totalResults > 0) {
+        avgVideoConfidence /= totalResults;
+        avgAudioConfidence /= totalResults;
+        avgFluency /= totalResults;
+        grammarAccuracy = (grammarAccuracy / totalResults).round();
+      }
+
+      print("Avg Video Confidence: $avgVideoConfidence%");
+      print("Avg Audio Confidence: $avgAudioConfidence%");
+      print("Avg Fluency: $avgFluency%");
+      print("Avg Grammar Accuracy: $grammarAccuracy%");
     }
 
     return InkWell(
@@ -1312,8 +1354,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     Expanded(
                       child: _buildInterviewMetric(
-                        'Filler\nWords',
-                        totalFillerWords.toString(),
+                        'Grammar Accuracy',
+                        grammarAccuracy.toString(),
                         Icons.text_fields,
                         color,
                         isNegative: true,

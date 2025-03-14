@@ -4,7 +4,6 @@ import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/const/font.dart';
 import 'package:hirewise/models/mock_interview_result_model.dart';
 import 'package:hirewise/pages/prepzone/test/mockinterview/mock_interview_result_page.dart';
-import 'package:hirewise/pages/prepzone/test/mockinterview/mock_interview_setup_page.dart';
 import 'package:hirewise/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hirewise/const/colors.dart';
 import 'package:hirewise/const/font.dart';
 import 'package:hirewise/models/aptitude_test_result_model.dart';
 import 'package:hirewise/models/question_model.dart';
@@ -32,9 +33,9 @@ class _AptitudeResultPageState extends State<AptitudeResultPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: backgroundColor,
         elevation: 0,
         title: Text(
           'Aptitude Test Result',
@@ -257,16 +258,18 @@ class _AptitudeResultPageState extends State<AptitudeResultPage> {
           final question = entry.key;
           final selectedOption = entry.value;
           final isUnanswered = selectedOption == -1;
-          final isCorrect = !isUnanswered && selectedOption == question.correctOptionIndex;
+          final isCorrect =
+              !isUnanswered && selectedOption == question.correctOptionIndex;
 
-          return _buildQuestionCard(question, selectedOption, isCorrect, isUnanswered);
+          return _buildQuestionCard(
+              question, selectedOption, isCorrect, isUnanswered);
         }).toList(),
       ],
     );
   }
 
-  Widget _buildQuestionCard(
-      Question question, int selectedOption, bool isCorrect, bool isUnanswered) {
+  Widget _buildQuestionCard(Question question, int selectedOption,
+      bool isCorrect, bool isUnanswered) {
     // Initialize expansion state if not already set
     _expandedExplanations[question] ??= false;
 
@@ -308,17 +311,19 @@ class _AptitudeResultPageState extends State<AptitudeResultPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            isUnanswered 
-                              ? Icons.remove_circle_outline
-                              : (isCorrect ? Icons.check_circle : Icons.cancel),
+                            isUnanswered
+                                ? Icons.remove_circle_outline
+                                : (isCorrect
+                                    ? Icons.check_circle
+                                    : Icons.cancel),
                             color: cardColor,
                             size: 16,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            isUnanswered 
-                              ? 'Unanswered'
-                              : (isCorrect ? 'Correct' : 'Incorrect'),
+                            isUnanswered
+                                ? 'Unanswered'
+                                : (isCorrect ? 'Correct' : 'Incorrect'),
                             style: AppStyles.mondaB.copyWith(
                               fontSize: 12,
                               color: cardColor,

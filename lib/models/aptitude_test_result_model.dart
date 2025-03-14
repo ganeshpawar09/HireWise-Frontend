@@ -15,13 +15,12 @@ class AptitudeTestResult {
 
   factory AptitudeTestResult.fromJson(Map<String, dynamic> json) {
     // Parse selectedOptions as a list of objects
-    final selectedOptionsList = (json['selectedOptions'] as List)
-        .map((item) {
-          final question = Question.fromJson(item['question'] as Map<String, dynamic>);
-          final option = item['option'] as int;
-          return MapEntry(question, option);
-        })
-        .toList();
+    final selectedOptionsList = (json['selectedOptions'] as List).map((item) {
+      final question =
+          Question.fromJson(item['question'] as Map<String, dynamic>);
+      final option = item['option'] as int;
+      return MapEntry(question, option);
+    }).toList();
 
     return AptitudeTestResult(
       selectedOptions: Map.fromEntries(selectedOptionsList),
