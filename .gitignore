@@ -31,6 +31,8 @@ migrate_working_dir/
 .pub/
 /build/
 
+/lib/server.dart
+
 # Symbolication related
 app.*.symbols
 
