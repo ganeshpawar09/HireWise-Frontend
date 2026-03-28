@@ -31,8 +31,6 @@ class _HackathonDetailPageState extends State<HackathonDetailPage> {
     return DateFormat('dd MMM yyyy').format(date);
   }
 
-  bool _isLoading = false;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -313,9 +311,7 @@ class _HackathonDetailPageState extends State<HackathonDetailPage> {
         ),
         child: ElevatedButton(
           onPressed: () async {
-            setState(() {
-              _isLoading = true;
-            });
+            setState(() {});
 
             try {
               final Uri url = Uri.parse(widget.hackathon.registrationLink);
@@ -335,9 +331,7 @@ class _HackathonDetailPageState extends State<HackathonDetailPage> {
                 ),
               );
             } finally {
-              setState(() {
-                _isLoading = false;
-              });
+              setState(() {});
             }
           },
           style: ElevatedButton.styleFrom(
